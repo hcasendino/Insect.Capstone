@@ -21,20 +21,30 @@ COI.all.previous.hashes.annotated <- readRDS("~/Desktop/Insect.Capstone/rds_file
 COI_asvs_ID_cols <- COI_asvs %>% 
   separate(Sample_name, into = c("Locus", "MonthDay","Site","Reach","Bottle"), "[.]")
 
-# For rows with missing values, which locus? (mostly delta & MBT, and some COI)
+# For rows with missing values, which locus? (mostly delta & MBT, and some COI)(COI ones are all Kangaroo control) 
 COI_asvs_ID_cols %>% 
   filter_all(any_vars(is.na(.))) %>% 
   group_by(Locus) %>% 
   summarise(Count = n())
 
-# For the COI, which had missing values? (COI ones are all Kangaroo control) 
-COI_asvs_ID_cols %>% 
-  filter_all(any_vars(is.na(.))) %>% 
-  filter(Locus == "COI")
-
-COI_asvs_ID_cols %>% 
+# Remove the rows with missing values
+rows_to_remove_df <- COI_asvs_ID_cols %>% 
   mutate(index = (1:nrow(COI_asvs_ID_cols))) %>% 
   filter_all(any_vars(is.na(.)))
+
+clean_COI_asvs<- COI_asvs_ID_cols[-rows_to_remove_df$index, -1]
+
+# Nest
+clean_COI_asvs <- clean_COI_asvs %>% 
+  unite("Site.Reach", Site, Reach, sep = ".") %>%
+  nest(Bottles = c(Bottle,Hash, nReads))
+
+### COI ASV TABLE : eDNA Index
+
+unique(clean_COI_asvs$Site.Reach) # need to remove the kangaroo! 
+
+
+
 
 
 
