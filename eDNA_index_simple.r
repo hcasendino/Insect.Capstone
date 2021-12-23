@@ -11,7 +11,10 @@ eDNAindex<- function(df, reach = F){
       group_by(Sample,Biological.replicate) %>% 
       mutate (Tot = sum(sumreads),
               Row.prop = sumreads / Tot)  %>%         # This creates the proportion on each biological replicate    
-      group_by(Sample) %>% 
+    
+    {if (reach == TRUE){group_by(., Sample, Reach)}  
+      else{group_by(., Sample)} } %>% 
+    
       mutate (nreps = length(unique(Biological.replicate))) %>% 
       
     {if (reach == TRUE){group_by(., Sample, Reach, Hash)}  
