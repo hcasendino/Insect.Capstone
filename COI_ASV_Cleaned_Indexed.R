@@ -19,7 +19,7 @@ COI.all.previous.hashes.annotated <- readRDS("~/Desktop/Insect.Capstone/rds_file
 
 ### COI ASV TABLE : Cleanup
 COI_asvs_ID_cols <- COI_asvs %>% 
-  separate(Sample_name, into = c("Locus", "MonthDay","Site","Reach","Bottle"), "[.]")
+  separate(Sample_name, into = c("Locus", "mmyy","Site","Reach","Biological.replicate"), "[.]")
 
 # For rows with missing values, which locus? (mostly delta & MBT, and some COI)(COI ones are all Kangaroo control) 
 COI_asvs_ID_cols %>% 
@@ -32,16 +32,20 @@ rows_to_remove_df <- COI_asvs_ID_cols %>%
   mutate(index = (1:nrow(COI_asvs_ID_cols))) %>% 
   filter_all(any_vars(is.na(.)))
 
-clean_COI_asvs<- COI_asvs_ID_cols[-rows_to_remove_df$index, -1]
+clean_COI_asvs <- COI_asvs_ID_cols %>% 
+  slice(-rows_to_remove_df$index) %>%  # remove rows
+  select(-Locus) %>% unite("Sample", c(mmyy, Site), sep = "_", remove = F) %>% 
+  filter(Site != "Kangaroo") # remove kangaroo
 
-# Nest
-clean_COI_asvs <- clean_COI_asvs %>% 
-  unite("Site.Reach", Site, Reach, sep = ".") %>%
-  nest(Bottles = c(Bottle,Hash, nReads))
 
-### COI ASV TABLE : eDNA Index
+### COI ASV TABLE : eDNA Index (need to edit func to incorporate reach)
 
-unique(clean_COI_asvs$Site.Reach) # need to remove the kangaroo! 
+source("eDNA_index_simple.r")
+COI_index_output_df <- eDNAindex(clean_COI_asvs) 
+
+COI_index_only <- COI_index_output_df %>% select(Sample, Hash, Normalized.reads) %>% 
+                    group_by(Sample,Hash) %>% 
+                    summarize(index = mean(Normalized.reads)) # change to just be cutting duplicates, all its doing
 
 
 
@@ -50,13 +54,5 @@ unique(clean_COI_asvs$Site.Reach) # need to remove the kangaroo!
 
 
 COI.all.previous.hashes.annotated
-
-# COI: Which insects? 
-COI_annotated<- COI.all.previous.hashes.annotated
-COI_annotated %>% filter(order == "Diptera")%>% group_by(family) %>% summarise(sum = n())
-COI_annotated %>% filter(order == "Ephemeroptera")%>% group_by(family) %>% summarise(sum = n())
-COI_annotated %>% filter(order == "Plecoptera") %>% group_by(family) %>% summarise(sum = n())
-COI_annotated %>% filter(order == "Trichoptera") %>% group_by(family) %>% summarise(sum = n())
-
 
 
