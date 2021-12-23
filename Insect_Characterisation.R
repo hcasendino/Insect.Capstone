@@ -22,8 +22,22 @@ COI_index_spring <- COI_index_MarAprOnly_df %>%
   distinct()  %>% # remove duplicate rows 
   group_by(Site, Hash) %>% summarise(mean.Normalized.reads = mean(Normalized.reads))
 
+## ADDING TAXONOMY TO ASV Table: 
 
-
+assign.taxa <- function(asv_table, annotations, lowerTaxa){
+  
+  
+  
+  asv_table <- asv_table %>% mutate(Class = NA) %>% mutate(lowerTaxa = NA)
+  
+  for(i in 1:nrow(asv_table)){
+    asv_Row <- which(annotations$representative %in% asv_table$Hash[i])
+    asv_table$Class[i] <- annotations$Class[asv_Row]
+    asv_table$lowerTaxa[i] <- annotations$lowerTaxa[asv_Row]
+  }
+  
+return(asv_table)
+}
 
 
 
