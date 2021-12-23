@@ -1,19 +1,19 @@
-# Usage eDNAindex(x) 
+# Usage eDNAindex(x); x is dataframe with columns: Sample, Hash, nReads, Biological.replicate
 # Co-opted from Moncho's code, but simplified syntax (only takes df, not each column as a string)
 
 eDNAindex<- function(df){ 
 
   require(tidyverse)
 
-      df %>% 
-      group_by(sample, Hash, Bottle) %>%
+  df %>% 
+      group_by(Sample, Hash, Biological.replicate) %>%
       summarise (sumreads = sum(nReads)) %>%  # This sums technical replicates
-      group_by(sample,Bottle) %>% 
+      group_by(Sample,Biological.replicate) %>% 
       mutate (Tot = sum(sumreads),
               Row.prop = sumreads / Tot)  %>%         # This creates the proportion on each biological replicate    
-      group_by(sample) %>% 
-      mutate (nreps = length(unique(Bottle))) %>% 
-      group_by(sample, Hash) %>% 
+      group_by(Sample) %>% 
+      mutate (nreps = length(unique(Biological.replicate))) %>% 
+      group_by(Sample, Hash) %>% 
       summarise (mean.prop = sum (Row.prop) / max(nreps))   %>% #"Averaging ratios between Biological replicates"
       group_by (Hash) %>%
       mutate (Colmax = max (mean.prop),
