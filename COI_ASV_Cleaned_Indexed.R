@@ -1,19 +1,16 @@
-###===Insect Characterisation of Bellingham Creeks======
+###===Bellingham Creeks eDNA Data: Cleaning & Calculating eDNA Index======
 # Written by Helen Casendino (hcas1024@uw.edu)
-# Created: 7 Nov 2021   Modified: 21 Dec 2021
+# Created: 7 Nov 2021   Modified: 23 Dec 2021
 ###=====================
 
 ###====Dependencies====
-library(here)
 library(tidyverse)
-
+library(here)
 
 #####====Read in Data - From Ezza & Eily ============
-COI_asvs <- read.csv("20211120.combined.COI.ASV.table.csv")
-MiFish_asvs  <- read.csv("20211120.combined.MiFish.ASV.table.csv")
-all_seq <- read.csv("master_sequencing_datasheet_20211026.csv")
-COI.all.previous.hashes.annotated <- readRDS("~/Desktop/Insect.Capstone/rds_files/COI.all.previous.hashes.annotated.rds")
-
+COI_asvs <- read.csv(here("Input/20211120.combined.COI.ASV.table.csv"))
+# MiFish_asvs  <- read.csv(here("Input/20211120.combined.MiFish.ASV.table.csv"))
+# all_seq <- read.csv(here("Input/master_sequencing_datasheet_20211026.csv"))
 
 #####==============
 
@@ -38,21 +35,9 @@ clean_COI_asvs <- COI_asvs_ID_cols %>%
   filter(Site != "Kangaroo") # remove kangaroo
 
 
-### COI ASV TABLE : eDNA Index (need to edit func to incorporate reach)
+### COI ASV TABLE : eDNA Index
 
 source("eDNA_index_simple.r")
-COI_index_output_df <- eDNAindex(clean_COI_asvs) 
+COI_index_output_df <- eDNAindex(clean_COI_asvs, reach = FALSE) 
 
-COI_index_only <- COI_index_output_df %>% select(Sample, Hash, Normalized.reads) %>% 
-                    group_by(Sample,Hash) %>% 
-                    summarize(index = mean(Normalized.reads)) # change to just be cutting duplicates, all its doing
-
-
-
-
-
-
-
-COI.all.previous.hashes.annotated
-
-
+write_csv(COI_index_output_df, "Input/COI_index_output_df.csv")
