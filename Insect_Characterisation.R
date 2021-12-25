@@ -27,6 +27,7 @@ COI_index_spring <- COI_index_MarAprOnly_df %>%
 assign.taxa <- function(asv_table, annotations, taxa_col = annotations$order){
   
   asv_taxa_df <- asv_table %>% mutate(class = NA, taxon = NA) 
+  identified_hashes <- rep(NA, nrow(asv_taxa_df))
   
   for(i in 1:nrow(asv_taxa_df)){
      taxa_Row <- which(annotations$representative %in% asv_taxa_df$Hash[i])
@@ -34,12 +35,13 @@ assign.taxa <- function(asv_table, annotations, taxa_col = annotations$order){
      if(length(taxa_Row) > 0){
        asv_taxa_df$class[i] <- annotations$class[taxa_Row]
        asv_taxa_df$taxon[i] <- taxa_col[taxa_Row]
+       identified_hashes[i] <- i
      }
-     else{print(c(i,"unidentified Hash"))}
-   }
+  }
+    print(length(na.omit(identified_hashes))/length(identified_hashes)) # prop of hashes in asv_table that were ID'd by annotation table 
    return(asv_taxa_df)
 }
 
-assign.taxa(COI_index_spring, COI.hash.annotated)
+output <- assign.taxa(COI_index_spring, COI.hash.annotated, taxa_col = annotations$order)
 
 
