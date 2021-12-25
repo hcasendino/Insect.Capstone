@@ -24,22 +24,22 @@ COI_index_spring <- COI_index_MarAprOnly_df %>%
 
 ## ADDING TAXONOMY TO ASV Table: 
 
-assign.taxa <- function(asv_table, annotations, lowerTaxa){
+assign.taxa <- function(asv_table, annotations, taxa_col = annotations$order){
   
+  asv_taxa_df <- asv_table %>% mutate(class = NA, taxon = NA) 
   
-  
-  asv_table <- asv_table %>% mutate(Class = NA) %>% mutate(lowerTaxa = NA)
-  
-  for(i in 1:nrow(asv_table)){
-    asv_Row <- which(annotations$representative %in% asv_table$Hash[i])
-    asv_table$Class[i] <- annotations$Class[asv_Row]
-    asv_table$lowerTaxa[i] <- annotations$lowerTaxa[asv_Row]
-  }
-  
-return(asv_table)
+  for(i in 1:nrow(asv_taxa_df)){
+     taxa_Row <- which(annotations$representative %in% asv_taxa_df$Hash[i])
+     
+     if(length(taxa_Row) > 0){
+       asv_taxa_df$class[i] <- annotations$class[taxa_Row]
+       asv_taxa_df$taxon[i] <- taxa_col[taxa_Row]
+     }
+     else{print(c(i,"unidentified Hash"))}
+   }
+   return(asv_taxa_df)
 }
 
-
-
+assign.taxa(COI_index_spring, COI.hash.annotated)
 
 
