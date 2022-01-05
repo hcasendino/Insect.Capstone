@@ -1,6 +1,6 @@
 ###===Bellingham Creeks eDNA Data: Cleaning & Calculating eDNA Index======
 # Written by Helen Casendino (hcas1024@uw.edu)
-# Created: 7 Nov 2021   Modified: 23 Dec 2021
+# Created: 7 Nov 2021   Modified: 4 Jan 2022
 ###=====================
 
 ###====Dependencies====
@@ -37,7 +37,7 @@ clean_COI_asvs <- COI_asvs_ID_cols %>%
 
 ### COI ASV TABLE : eDNA Index
 
-source("eDNA_index_simple.r")
+source("eDNA_index_simple_func.r")
 COI_index_output_df <- eDNAindex(clean_COI_asvs, reach = FALSE) 
 
 write_csv(COI_index_output_df, "Input/COI_index_output_df.csv")
