@@ -1,38 +1,65 @@
 ###===Insect Community Comparison among Bellingham Creeks======
 # Written by Helen Casendino (hcas1024@uw.edu)
-# Created: 4 Jan 2022   Modified: 4 Jan 2022
+# Created: 4 Jan 2022   Modified: 18 Jan 2022
 ###=====================
+
+families <- read.csv(here("Input","COI_class_family_taxonomy_df.csv"))
+orders <- read.csv(here("Input","COI_class_order_taxonomy_df.csv"))
 
 ###====Dependencies====
 library(tidyverse)
 library(here)
 library(vegan)
 
-###============
+###=====Bray Curtis, PERMANOVA & SIMPER=======
 
-insect.communities.comparison <- function(tax){
-    
-    readcsv_call <- paste0("Input/COI_class_",tax, "_taxonomy_df.csv") # read in csv corresponding to specific taxon level
+# getting data into dist form, and creating separate df with sites only 
+mean_taxa_index <- families %>% 
+  filter(class == "Insecta") %>% 
+  select(-class) %>% 
+  filter(taxon !="") %>% 
+  group_by(Site, taxon) %>% 
+  summarise(mean_index = mean(mean.Normalized.reads)) %>% 
+  pivot_wider(id_cols = Site, names_from = taxon, values_from = mean_index) %>% 
+  mutate_all(~replace(., is.na(.), 0)) %>% 
+  column_to_rownames(var = "Site")
+  
+Sites <- data.frame(Site = unique(families$Site))
 
-    df <- read.csv(readcsv_call, col.names = c("Site","Hash","mean.Normalized.reads", "class", paste0(tax))) %>%
-      filter(class == "Insecta") %>%
-      select(-c(Hash,class)) %>% 
-      group_by(Site, order) %>% 
-      summarise(grand_mean_index = mean(mean.Normalized.reads)) %>%  # summarise index for each taxon by site? seems bad but can workshop
-      select(grand_mean_index, everything())
+# getting Bray Curtis Dissimilarities 
 
-    df <- df[-which(df[,ncol(df)] == ""),]  # remove empty rows
-                        
-    df<- df %>% pivot_wider(colnames(df), names_from = Site, values_from = grand_mean_index) %>% 
-            replace(is.na(.), 0)
-      
-    # bray curtis (use centroids?); permanova 
-    dis <- vegdist(df[,-1])
-    # grouping <- factor(rep(1,5), labels= colnames(df[,-1]) )
-    # centroid<- betadisper(dis, group = grouping) (grouping is wrong)
-    # adonis(formula = subset ~ test_groups) 
+brays <- vegdist(mean_taxa_index)
+hist(brays)
+ 
+# Check Multivariate Dispersions among sites (for PERMANOVA) 
+# dispersion should be mostly equal among sites
 
-    return(df)
-}
+groups <- factor(Sites$Site)
+mod <- betadisper(brays, groups)
+anova(mod)
+permutest(mod, pairwise= T, permutations = 99)
 
-output <- insect.communities.comparison(tax = "order")
+# PERMANOVA (any difference, then, which specific sites are different)
+# are adonis and betadisper failing because I haven't clustered at all? 
+
+adonis(mean_taxa_index ~ Site, data = Sites, method = "bray", permutations = 999)
+
+# SIMPER Analysis (b/w different sites (or site clusters), which families/orders driving difference)
+
+sim <- with(Sites, simper(mean_taxa_index, Site))
+summary(sim)
+ 
+
+
+
+###=====Figs=======
+
+# NMDS plot
+
+plotbrays <- metaMDS(mean_taxa_index, k =2) # tress is (nearly) zero: you may have insufficient data
+ordiplot(plotbrays, type = "n")
+orditorp(plotbrays, display = "species", col= "red", cex = 0.5, air = 0.1, pch=".")
+orditorp(plotbrays, display = "sites", cex = 1, air = 0.25)
+
+
+
