@@ -55,7 +55,7 @@ write_csv(output_family, "Input/COI_class_family_taxonomy_df.csv")
 
 # genus
 output_genus <- assign.taxa(COI_index_spring, COI.hash.annotated, taxa_col = annotations$genus) 
-write_csv(output_family, "Input/COI_class_genus_taxonomy_df.csv") 
+write_csv(output_genus, "Input/COI_class_genus_taxonomy_df.csv") 
 
 
 
