@@ -53,6 +53,12 @@ write_csv(output_order, "Input/COI_class_order_taxonomy_df.csv")
 output_family <- assign.taxa(COI_index_spring, COI.hash.annotated, taxa_col = annotations$family) 
 write_csv(output_family, "Input/COI_class_family_taxonomy_df.csv") 
 
+# genus
+output_genus <- assign.taxa(COI_index_spring, COI.hash.annotated, taxa_col = annotations$genus) 
+write_csv(output_family, "Input/COI_class_genus_taxonomy_df.csv") 
+
+
+
 #####=====Exploring Insect Subset=========
 
 # order level
