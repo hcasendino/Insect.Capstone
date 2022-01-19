@@ -92,19 +92,39 @@ mean_taxa_index_f <- create.df.for.comparison(families)
 
 plotbrays <- metaMDS(mean_taxa_index_o, k =2) 
 ordiplot(plotbrays, type = "n")
-orditorp(plotbrays, display = "species", col= "red", cex = 0.5, air = 0.01, pch=".", main = "Order") 
+orditorp(plotbrays, display = "species", col= "red", cex = 0.5, air = 0.01, pch=".") 
 orditorp(plotbrays, display = "sites", cex = .75, air = 0.01)
 ggsave(file = here("Figures", "1a_order_NMDS_noncluster.png"), width = 20, height = 8)
-
 
 plotbrays <- metaMDS(mean_taxa_index_f, k =2) 
 ordiplot(plotbrays, type = "n")
 orditorp(plotbrays, display = "species", col= "red", cex = 0.5, air = 0.1, pch=".", main = "Family")
 orditorp(plotbrays, display = "sites", cex = .75, air = 0.01)
+ggsave(file = here("Figures", "1b_family_NMDS_noncluster.png"), width = 20, height = 8)
 
 plotbrays <- metaMDS(mean_taxa_index_g, k =2) 
 ordiplot(plotbrays, type = "n")
 orditorp(plotbrays, display = "species", col= "red", cex = 0.5, air = 0.1, pch=".", main = "Genus")
 orditorp(plotbrays, display = "sites", cex = .75, air = 0.01)
+ggsave(file = here("Figures", "1c_genus_NMDS_noncluster.png"), width = 20, height = 8)
+
+
+# Fig 2: 
+
+par(mfrow = c(1,2))
+# hist(vegdist(mean_taxa_index_g), main = "Genus BCDs", xlab = "", ylab = "")
+hist(vegdist(mean_taxa_index_f), main = "Family BCDs", xlab = "", ylab = "")
+hist(vegdist(mean_taxa_index_o), main = "Order BCDs", xlab = "", ylab = "")
+ggsave(file = here("Figures", "2_taxa_bcds.png"), width = 16, height = 8)
+
+# Fig 3: Spring - August NMDS polygon plots (padden and chuckanut)
+
+
+# Table 1: Summary Statistics by site for spring (orders and genus )
+
+
+
+
+
 
 
