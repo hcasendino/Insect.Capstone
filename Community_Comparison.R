@@ -84,31 +84,27 @@ adonis2(mean_taxa_index ~ Status, data = Sites_status, method = "bray", permutat
 
 ###=====Figs=======
 
-# Fig 1: NMDS plot of Bray dissim at Order, Family, Genus level with site factor (no cluster)
+# Fig 1(a-c): NMDS plot of Bray dissim at Order, Family, Genus level with site factor (no cluster)
 
 mean_taxa_index_o <- create.df.for.comparison(orders)
 mean_taxa_index_f <- create.df.for.comparison(families)
-mean_taxa_index_g <- create.df.for.comparison(genuses)
-par(mfrow= c(3,1))
+# mean_taxa_index_g <- create.df.for.comparison(genuses)
 
 plotbrays <- metaMDS(mean_taxa_index_o, k =2) 
 ordiplot(plotbrays, type = "n")
 orditorp(plotbrays, display = "species", col= "red", cex = 0.5, air = 0.01, pch=".", main = "Order") 
 orditorp(plotbrays, display = "sites", cex = .75, air = 0.01)
+ggsave(file = here("Figures", "1a_order_NMDS_noncluster.png"), width = 20, height = 8)
+
 
 plotbrays <- metaMDS(mean_taxa_index_f, k =2) 
 ordiplot(plotbrays, type = "n")
 orditorp(plotbrays, display = "species", col= "red", cex = 0.5, air = 0.1, pch=".", main = "Family")
-orditorp(plotbrays, display = "sites", cex = 1, air = 0.01)
+orditorp(plotbrays, display = "sites", cex = .75, air = 0.01)
 
 plotbrays <- metaMDS(mean_taxa_index_g, k =2) 
 ordiplot(plotbrays, type = "n")
 orditorp(plotbrays, display = "species", col= "red", cex = 0.5, air = 0.1, pch=".", main = "Genus")
-orditorp(plotbrays, display = "sites", cex = 1, air = 0.01)
+orditorp(plotbrays, display = "sites", cex = .75, air = 0.01)
 
-ggsave(
-  file = here::here("Figures", ""),
-  width = 14,
-  height = 8
-)
 
