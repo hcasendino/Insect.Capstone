@@ -1,4 +1,4 @@
-###===Insect Community Comparison among Bellingham Creeks======
+###===Insect Community Comparison among Bellingham Creeks, Permanova,simper,nmds======
 # Written by Helen Casendino (hcas1024@uw.edu)
 # Created: 4 Jan 2022   Modified: 18 Jan 2022
 
