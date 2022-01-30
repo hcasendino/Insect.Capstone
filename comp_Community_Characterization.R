@@ -18,10 +18,83 @@ asv_reads_annotated %>% group_by(class) %>% mutate(ClassReadSum = sum(nReads)) %
 library(tidyverse)
 library(here)
 library(vegan)
+library(ggpubr)
 
-###====Gross Insecta Richness (species & genus) across Creeks======
+###====Gross Insecta Richness (asv) across Creeks======
 
-insect_sp_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(species)) %>%  # 0.1% of asv instances are insects and sp classified
+insect_richness <-  asv_reads_annotated %>% filter(class == "Insecta") %>%  
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(richness = length(unique(Hash))) %>% ungroup()
+
+# violin plot
+ggplot(insect_richness, aes(x=Site, y=richness)) + 
+  geom_violin(aes(fill = Site))  + 
+  scale_fill_brewer(palette="RdBu") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Insect Richness", y = "ASV Richness Per Bottle") +
+  theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave(file = here("Figures", "total_insect_rich_sp_genus.png"), width = 5, height = 4)
+
+###====Insecta Richness (asv) for IBI orders across Creeks======
+
+# IBI orders = ephemeroptera, trichoptera, plecoptera
+
+ephem_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(genus) & order == "Ephemeroptera") %>% 
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(e_richness = length(unique(genus))) %>% ungroup() 
+
+pleco_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(genus) & order == "Plecoptera") %>% 
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(p_richness = length(unique(genus))) %>% ungroup() 
+
+trich_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(genus) & order == "Trichoptera") %>% 
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(t_richness = length(unique(genus))) %>% ungroup()
+
+# plots
+v1 <- ggplot(ephem_richness, aes(x=Site, y=e_richness)) + 
+  geom_violin(aes(fill = Site))  + 
+  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Genus Richness - Ephemeroptera", y = "Richness Per Bottle") +
+  theme_classic()  +  
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+
+v2 <- ggplot(pleco_richness, aes(x=Site, y=p_richness)) + 
+  geom_violin(aes(fill = Site))  + 
+  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Genus Richness - Plecoptera", y = "Richness Per Bottle") +
+  theme_classic()  +  
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+
+v3 <- ggplot(trich_richness, aes(x=Site, y=t_richness)) + 
+  geom_violin(aes(fill = Site))  + 
+  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Genus Richness - Trichoptera", y = "Richness Per Bottle") +
+  theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
+
+ggarrange(v1, v2, v3, ncol = 3, nrow = 1)
+ggsave(file = here("Figures", "IBI_insect_rich_genus.png"), width = 15, height = 4)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###====Taxa Richness (not using asv) (OLD)===============
+ 
+# Gross Insecta Richness (species & genus) across Creeks !!!! 
+
+insect_sp_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & species != "" & !is.na(species)) %>%  # 0.1% of asv instances are insects and sp classified
           group_by(Sample, Biological.replicate) %>% 
           mutate(sp_richness = length(unique(species))) %>% ungroup()
 
@@ -30,34 +103,59 @@ insect_g_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & genus 
   mutate(g_richness = length(unique(genus))) %>% ungroup()
 
 # violin plots
-ggplot(insect_sp_richness, aes(x=Site, y=sp_richness)) + 
+v1 <- ggplot(insect_sp_richness, aes(x=Site, y=sp_richness)) + 
   geom_violin(aes(fill = Site))  + 
   scale_fill_brewer(palette="RdBu") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
   labs(title = "Insect Species Richness", y = "Richness Per Bottle") +
-    theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
- 
-ggsave(file = here("Figures", "total_insect_rich_sp.png"), width = 5, height = 4)
+    theme_classic()  +  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
 
-ggplot(insect_g_richness, aes(x=Site, y=g_richness)) + 
+v2 <- ggplot(insect_g_richness, aes(x=Site, y=g_richness)) + 
   geom_violin(aes(fill = Site))  + 
   scale_fill_brewer(palette="RdBu") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
   labs(title = "Insect Genus Richness", y = "Richness Per Bottle") +
   theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
 
-ggsave(file = here("Figures", "total_insect_rich_genus.png"), width = 5, height = 4)
+ggarrange(v1, v2,  ncol = 2, nrow = 1)
+ggsave(file = here("Figures", "total_insect_rich_sp_genus.png"), width = 10, height = 4)
 
-###====Insecta Richness (species & genus) for IBI orders across Creeks======
+# Insecta Richness (genus) for IBI orders across Creeks !!!! 
 
 # IBI orders = ephemeroptera, trichoptera, plecoptera
 
-# ephem
-ephem_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(species)) %>%  # 0.1% of asv instances are insects and sp classified
+ephem_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & genus != "" & !is.na(genus) & order == "Ephemeroptera") %>% 
   group_by(Sample, Biological.replicate) %>% 
-  mutate(sp_richness = length(unique(species))) %>% ungroup()
+  mutate(e_richness = length(unique(genus))) %>% ungroup() 
 
+pleco_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & genus != "" & !is.na(genus) & order == "Plecoptera") %>% 
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(p_richness = length(unique(genus))) %>% ungroup() 
 
+trich_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & genus != "" & !is.na(genus) & order == "Trichoptera") %>% 
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(t_richness = length(unique(genus))) %>% ungroup()
 
+# plots
+v1 <- ggplot(ephem_richness, aes(x=Site, y=e_richness)) + 
+  geom_violin(aes(fill = Site))  + ylim(c(0,8)) + 
+  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Genus Richness - Ephemeroptera", y = "Richness Per Bottle") +
+  theme_classic()  +  
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
 
+v2 <- ggplot(pleco_richness, aes(x=Site, y=p_richness)) + 
+  geom_violin(aes(fill = Site))  + ylim(c(0,8)) + 
+  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Genus Richness - Plecoptera", y = "Richness Per Bottle") +
+  theme_classic()  +  
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
 
+v3 <- ggplot(trich_richness, aes(x=Site, y=t_richness)) + 
+  geom_violin(aes(fill = Site))  + ylim(c(0,8)) + 
+  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Genus Richness - Trichoptera", y = "Richness Per Bottle") +
+  theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
+
+ggarrange(v1, v2, v3, ncol = 3, nrow = 1)
+ggsave(file = here("Figures", "IBI_insect_rich_genus.png"), width = 15, height = 4)
 
 
