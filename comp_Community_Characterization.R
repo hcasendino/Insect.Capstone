@@ -4,6 +4,9 @@
 
 
 asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
+asv_reads_annotated <- asv_reads_annotated %>% filter(mmyy != "521") %>% # FOR NOW, we'll remove may june and july because messed up sequencing runs
+                        filter(mmyy != "621" ) %>% 
+                         filter(mmyy != "721" )
 
 ###====Dependencies====
 library(tidyverse)
@@ -12,9 +15,8 @@ library(vegan)
 
 ###====Gross Insecta Richness across Creeks======
 
-
-
-
+asv_reads_annotated %>% group_by(Sample, Biological.replicate) %>% 
+              summarise(n()) # summaarise # of species in insecta for each creek, plot 
 
 
 
