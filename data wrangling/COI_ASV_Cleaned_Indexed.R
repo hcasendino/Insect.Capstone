@@ -40,7 +40,7 @@ write_csv(clean_COI_asvs, "Input/COI_asv_reads_df.csv")
 
 ### COI ASV TABLE : eDNA Index
 
-source("eDNA_index_simple_func.r")
+source(here("functions","eDNA_index_simple_func.r"))
 COI_index_output_df <- eDNAindex(clean_COI_asvs, reach = FALSE) 
 
 write_csv(COI_index_output_df, "Input/COI_index_output_df.csv")

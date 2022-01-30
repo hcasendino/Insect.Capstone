@@ -14,11 +14,8 @@ COI_index_output_df <- read_csv(here("Input/COI_index_output_df.csv"))
 
 #####==== Adding Taxonomy ==========
 
-# to sequenced reads 
-
 COI.hash.annotated <- COI.hash.annotated %>% rename("Hash" = "representative")
 asv_reads_annotated <- left_join(COI_asv_reads_df, COI.hash.annotated, by = "Hash")
-
 write_csv(asv_reads_annotated, "Input/COI_reads_taxonomy.csv") 
 
 #####===== Adding Taxonomy to eDNA Indexed Data (March-April only) =========
