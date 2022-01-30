@@ -33,7 +33,7 @@ ggplot(insect_richness, aes(x=Site, y=richness)) +
   labs(title = "Insect Richness", y = "ASV Richness Per Bottle") +
   theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
 
-ggsave(file = here("Figures", "total_insect_rich_sp_genus.png"), width = 5, height = 4)
+ggsave(file = here("Figures", "total_insect_rich_asv.png"), width = 5, height = 4)
 
 ###====Insecta Richness (asv) for IBI orders across Creeks======
 
@@ -84,8 +84,44 @@ ggsave(file = here("Figures", "IBI_insect_rich_genus.png"), width = 15, height =
 
 
 
+# IBI orders = ephemeroptera, trichoptera, plecoptera
 
+ephem_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & order == "Ephemeroptera") %>% 
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(e_richness = length(unique(Hash))) %>% ungroup() %>% #to make plotting 0s easier bc portage has no ephem, I'll add a row
+  add_row(Site = "1Prt", e_richness = 0)
 
+pleco_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & order == "Plecoptera") %>% 
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(p_richness = length(unique(Hash))) %>% ungroup() 
+
+trich_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & order == "Trichoptera") %>% 
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(t_richness = length(unique(Hash))) %>% ungroup()
+
+# plots
+v1 <- ggplot(ephem_richness, aes(x=Site, y=e_richness)) + 
+  geom_violin(aes(fill = Site))  + ylim(c(0,8)) + 
+  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Ephemeroptera", y = "Richness Per Bottle") +
+  theme_classic()  +  
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+
+v2 <- ggplot(pleco_richness, aes(x=Site, y=p_richness)) + 
+  geom_violin(aes(fill = Site))  + ylim(c(0,8)) + 
+  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Plecoptera", y = "Richness Per Bottle") +
+  theme_classic()  +  
+  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+
+v3 <- ggplot(trich_richness, aes(x=Site, y=t_richness)) + 
+  geom_violin(aes(fill = Site))  + ylim(c(0,8)) + 
+  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Trichoptera", y = "Richness Per Bottle") +
+  theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
+
+ggarrange(v1, v2, v3, ncol = 3, nrow = 1)
+ggsave(file = here("Figures", "IBI_insect_rich_asv.png"), width = 15, height = 4)
 
 
 
@@ -157,5 +193,6 @@ v3 <- ggplot(trich_richness, aes(x=Site, y=t_richness)) +
 
 ggarrange(v1, v2, v3, ncol = 3, nrow = 1)
 ggsave(file = here("Figures", "IBI_insect_rich_genus.png"), width = 15, height = 4)
+
 
 
