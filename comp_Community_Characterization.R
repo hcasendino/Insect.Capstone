@@ -4,34 +4,56 @@
 
 
 asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
-asv_reads_annotated <- asv_reads_annotated %>% filter(mmyy != "521") %>% # FOR NOW, we'll remove may june and july because messed up sequencing runs
-                        filter(mmyy != "621" ) %>% 
-                         filter(mmyy != "721" )
+asv_reads_annotated <- asv_reads_annotated %>% filter(mmyy != "521" & mmyy != "621" & mmyy != "721") # FOR NOW, we'll remove may june and july because messed up sequencing runs
+
+# summary stats
+length(which(asv_reads_annotated$class == "Insecta")) / nrow(asv_reads_annotated) # Classified Insects make up 0.17% of asv instances
+
+asv_reads_annotated %>% group_by(class) %>% mutate(ClassReadSum = sum(nReads)) %>% ungroup() %>% 
+  mutate(totalSum = sum(nReads)) %>% mutate(propReads = ClassReadSum/totalSum) %>% 
+  group_by(class) %>% summarise(proportion = unique(propReads)) %>% filter(class == "Insecta") # Classified Insects make up 0.48% of total reads
+  
 
 ###====Dependencies====
 library(tidyverse)
 library(here)
 library(vegan)
 
-###====Gross Insecta Richness across Creeks======
+###====Gross Insecta Richness (species & genus) across Creeks======
 
-asv_reads_annotated %>% group_by(Sample, Biological.replicate) %>% 
-              summarise(n()) # summaarise # of species in insecta for each creek, plot 
+insect_sp_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(species)) %>%  # 0.1% of asv instances are insects and sp classified
+          group_by(Sample, Biological.replicate) %>% 
+          mutate(sp_richness = length(unique(species))) %>% ungroup()
 
+insect_g_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & genus != "" & !is.na(genus)) %>%  
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(g_richness = length(unique(genus))) %>% ungroup()
 
+# violin plots
+ggplot(insect_sp_richness, aes(x=Site, y=sp_richness)) + 
+  geom_violin(aes(fill = Site))  + 
+  scale_fill_brewer(palette="RdBu") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Insect Species Richness", y = "Richness Per Bottle") +
+    theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
+ 
+ggsave(file = here("Figures", "total_insect_rich_sp.png"), width = 5, height = 4)
 
+ggplot(insect_g_richness, aes(x=Site, y=g_richness)) + 
+  geom_violin(aes(fill = Site))  + 
+  scale_fill_brewer(palette="RdBu") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
+  labs(title = "Insect Genus Richness", y = "Richness Per Bottle") +
+  theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
 
+ggsave(file = here("Figures", "total_insect_rich_genus.png"), width = 5, height = 4)
 
+###====Insecta Richness (species & genus) for IBI orders across Creeks======
 
+# IBI orders = ephemeroptera, trichoptera, plecoptera
 
-
-
-
-
-
-
-
-
+# ephem
+ephem_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(species)) %>%  # 0.1% of asv instances are insects and sp classified
+  group_by(Sample, Biological.replicate) %>% 
+  mutate(sp_richness = length(unique(species))) %>% ungroup()
 
 
 
