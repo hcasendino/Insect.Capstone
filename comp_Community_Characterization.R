@@ -124,7 +124,7 @@ ggarrange(v1, v2, v3, ncol = 3, nrow = 1)
 ggsave(file = here("Figures", "IBI_insect_rich_asv.png"), width = 15, height = 4)
 
 
-###====Insecta Characterization across Creeks using updated eDNA index (capscale)======
+###====Site Insecta Characterization across Creeks using updated eDNA index (capscale)======
 
 # first, index by max order proportion, not hash 
 
@@ -189,7 +189,7 @@ CAP.ASVid <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1))
 Top50 <- CAP.ASVid %>% head(50)
 write.csv(Top50, "CAPanalysis_Site_Top50DescASVs.csv")
 
-###====temporal differences across Creeks using updated eDNA index (capscale)======
+###====temporal and temporal*Site differences across Creeks using updated eDNA index (capscale)======
 
 cap1 <- capscale(hashes_only~ Site + mmyy + Site*mmyy,data=covariates_only, distance="bray")
 sppscores(cap1) <- hashes_only
@@ -208,6 +208,22 @@ cap2 <- cap1[["CCA"]][["wa"]] %>%
   geom_text(x = 0.22, y = 0.1, label="Site + mmyy + Site*mmyy", size = 4.2)
   
 ggsave(file = here("Figures", "CAPplot_Site_month.png"), width = 5, height = 4)
+
+# taxa assigments
+ASVvectors <- cap1[["CCA"]][["v"]] %>% as.data.frame 
+CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
+CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
+rownames(CAPorder) <- NULL
+
+#map on the classification of the ASVs to determine
+CAP.ASVid <- merge(CAPorder, asv_reads_annotated[,c("Hash","order", "family", "genus", "species")], by=c("Hash"), all.x=FALSE, all.y=TRUE)
+CAP.ASVid <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1))
+
+Top50 <- CAP.ASVid %>% head(50)
+write.csv(Top50, "CAPanalysis_Time_Site_Top50DescASVs.csv")
+
+
+
 
 ###====reach differences across Creeks using updated eDNA index (capscale)======
 
