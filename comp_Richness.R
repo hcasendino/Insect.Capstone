@@ -2,15 +2,23 @@
 # Written by Helen Casendino (hcas1024@uw.edu) & Ezza 
 # Created: 28 Jan 2022   Modified: 30 Jan 2022
 
-asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
-asv_reads_annotated <- asv_reads_annotated %>% filter(mmyy != "521" & mmyy != "621" & mmyy != "721") # FOR NOW, we'll remove may june and july because messed up sequencing runs
 
-
-###====Dependencies====
+# Dependencies
 library(tidyverse)
 library(here)
 library(vegan)
 library(ggpubr)
+
+asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
+asv_reads_annotated <- asv_reads_annotated %>% filter(mmyy != "521" & mmyy != "621" & mmyy != "721") # FOR NOW, we'll remove may june and july because messed up sequencing runs
+
+# summary stats
+length(which(asv_reads_annotated$class == "Insecta")) / nrow(asv_reads_annotated) # Classified Insects make up 0.17% of asv instances
+
+asv_reads_annotated %>% group_by(class) %>% mutate(ClassReadSum = sum(nReads)) %>% ungroup() %>% 
+  mutate(totalSum = sum(nReads)) %>% mutate(propReads = ClassReadSum/totalSum) %>% 
+  group_by(class) %>% summarise(proportion = unique(propReads)) %>% filter(class == "Insecta") # Classified Insects make up 0.48% of total reads
+
 
 ###====Gross Insecta Richness (asv) across Creeks======
 
