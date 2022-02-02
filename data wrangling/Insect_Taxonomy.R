@@ -22,7 +22,7 @@ write_csv(asv_reads_annotated, "Input/COI_reads_taxonomy.csv")
 ## ASV Table: aggregate for march/april (average index across mo)
 
 COI_index_MarAprOnly_df <- COI_index_output_df[-grep("^0821", COI_index_output_df$Sample, value = FALSE),] 
-
+118388
 COI_index_spring <- COI_index_MarAprOnly_df %>% 
   select(Site, Hash, Normalized.reads) %>% 
   distinct()  %>% # remove duplicate rows 
