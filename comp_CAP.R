@@ -1,7 +1,7 @@
 ###=== Comparing Creek Communities among Bellingham Creeks======
 # Looking at differences in insect communities across creek, month, and reach (using updated eDNA index)
 # Written by Helen Casendino (hcas1024@uw.edu) & Ezza 
-# Created: 28 Jan 2022   Modified: 1 Feb 2022
+# Created: 28 Jan 2022   Modified: 13 Feb 2022
 
 # Dependencies 
 library(tidyverse)
@@ -112,14 +112,27 @@ cap2 <- cap1[["CCA"]][["wa"]] %>%
   bind_cols(covariates_only) %>%
   mutate(mmyy = as.factor(mmyy)) %>% 
   ggplot(aes(x = CAP1,
-             y = CAP1)) + # CHANGE 
+             y = CAP1)) + # CHANGE? 
   geom_point(size = 1.5) +
-  geom_point(aes(shape = mmyy), size = 3) +
+  geom_point(aes(color = mmyy, shape = mmyy), size = 3) +
   scale_color_manual(values=c("darkblue" , wes_palette(n=3, name="FantasticFox1"), "orangered3")) + 
   theme_bw()  + 
   geom_text(x = 0.22, y = 0.1, label="mmyy", size = 4.2)
 
 ggsave(file = here("Figures", "CAPplot_month.png"), width = 5, height = 4)
+
+# taxa
+ASVvectors <- cap1[["CCA"]][["v"]] %>% as.data.frame 
+CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
+CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
+rownames(CAPorder) <- NULL
+
+#map on the classification of the ASVs to determine
+CAP.ASVid <- merge(CAPorder, asv_reads_annotated[,c("Hash","order", "family", "genus", "species")], by=c("Hash"), all.x=FALSE, all.y=TRUE)
+CAP.ASVid <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1))
+
+Top50 <- CAP.ASVid %>% head(50)
+write.csv(Top50, "CAPanalysis_Month_Top50DescASVs.csv")
 
 ###====reach*site differences (capscale)======
 
@@ -150,6 +163,9 @@ adonis(hashes_only ~ Site + Reach , data=covariates_only, method="bray")
 adonis(hashes_only ~ Site + Reach + Site*Reach, data=covariates_only, method="bray")
 
 adonis(hashes_only ~ Reach*mmyy, data=covariates_only, method="bray")
+
+adonis(hashes_only~ mmyy,data=covariates_only, method="bray") 
+
 
 
 
