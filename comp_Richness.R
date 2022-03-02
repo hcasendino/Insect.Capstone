@@ -8,7 +8,9 @@ library(tidyverse)
 library(here)
 library(vegan)
 library(ggpubr)
+library(gridExtra)
 
+# Read In Data 
 asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
 asv_reads_annotated <- asv_reads_annotated %>% filter(mmyy != "521" & mmyy != "621" & mmyy != "721") # FOR NOW, we'll remove may june and july because messed up sequencing runs
 
@@ -20,20 +22,61 @@ asv_reads_annotated %>% group_by(class) %>% mutate(ClassReadSum = sum(nReads)) %
   group_by(class) %>% summarise(proportion = unique(propReads)) %>% filter(class == "Insecta") # Classified Insects make up 0.48% of total reads
 
 
-###====Gross Insecta Richness (asv) across Creeks======
+###====Fig. 1a, 1b: Gross Insecta Richness (species) across Creeks, and by reach (PLUS FIGURE FACETED BY SITE)======
 
-insect_richness <-  asv_reads_annotated %>% filter(class == "Insecta") %>%  
-  group_by(Sample, Biological.replicate) %>% 
-  mutate(richness = length(unique(Hash))) %>% ungroup()
+insect_richness <-  asv_reads_annotated %>% filter(class == "Insecta") %>%
+                   filter(!is.na(genus)) %>% 
+                  group_by(Sample, Reach) %>% 
+                  mutate(genus_richness = length(unique(genus))) %>% 
+                  filter(!is.na(species) & species != "") %>%  
+                  mutate(sp_richness = length(unique(species))) %>% ungroup()
 
-# violin plot
-ggplot(insect_richness, aes(x=Site, y=richness)) + 
-  geom_violin(aes(fill = Site))  + 
-  scale_fill_brewer(palette="RdBu") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
-  labs(title = "Insect Richness", y = "ASV Richness Per Bottle") +
-  theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
+insect_richness[which(insect_richness$Reach == "Up11" | insect_richness$Reach == "Up5"), "Reach"] <- "Up" # for richness, group padden up sites
+                       
+siteplot <- ggplot(insect_richness, aes(x=Site, y=sp_richness)) + 
+  geom_boxplot(aes(fill=Site)) + 
+  scale_fill_viridis_d(option = "viridis", begin = 0.2, end = 0.9)  +
+    theme_bw() +
+  theme(strip.background =element_rect(fill="white")) + 
+  labs(title = "Total Insecta Richness by Site", y = "Species Richness", x = "") + 
+  theme(legend.position="none") + 
+  scale_x_discrete( labels= c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"))
 
-ggsave(file = here("Figures", "total_insect_rich_asv.png"), width = 5, height = 4)
+reachplot <- ggplot(insect_richness, aes(x=Reach, y=sp_richness)) + 
+  geom_boxplot(aes(fill=Reach)) + 
+  #  facet_wrap( ~ Site) + 
+  scale_fill_viridis_d(option = "viridis", begin = 0.4, end = 1)  +
+  theme_bw() +
+  theme(strip.background =element_rect(fill="white")) + 
+  labs(title = "Total Insecta Richness by Reach and Site", y = "Species Richness", x = "") + 
+  theme(legend.position="none") + 
+  scale_x_discrete( labels= c("Downstream", "Upstream"))
+
+ggarrange(siteplot, reachplot, ncol=2)
+ggsave(file = here("Figures", "total_insect_rich_species_multipanel.png"), width = 8, height = 4)
+
+###====Fig. 2: Gross Insecta Richness (genus) across Creeks, and by reach======
+
+siteplot <- ggplot(insect_richness, aes(x=Site, y=genus_richness)) + 
+  geom_boxplot(aes(fill=Site)) + 
+  scale_fill_viridis_d(option = "viridis", begin = 0.2, end = 0.9)  +
+  theme_bw() +
+  theme(strip.background =element_rect(fill="white")) + 
+  labs(title = "Total Insecta Richness by Site", y = "Genus Richness", x = "") + 
+  theme(legend.position="none") + 
+  scale_x_discrete( labels= c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"))
+
+reachplot <- ggplot(insect_richness, aes(x=Reach, y=genus_richness)) + 
+  geom_boxplot(aes(fill=Reach)) + 
+  scale_fill_viridis_d(option = "viridis", begin = 0.4, end = 1)  +
+  theme_bw() +
+  theme(strip.background =element_rect(fill="white")) + 
+  labs(title = "Total Insecta Richness by Reach", y = "Genus Richness", x = "") + 
+  theme(legend.position="none") + 
+  scale_x_discrete( labels= c("Downstream", "Upstream"))
+
+ggarrange(siteplot, reachplot, ncol=2)
+ggsave(file = here("Figures", "total_insect_rich_genus_multipanel.png"), width = 8, height = 4)
 
 ###====Insecta Richness (asv) for IBI orders across Creeks======
 
