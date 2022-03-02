@@ -1,6 +1,6 @@
 ###=== Characterizing Creek Communities among Bellingham Creeks - Richness======
 # Written by Helen Casendino (hcas1024@uw.edu) & Ezza 
-# Created: 28 Jan 2022   Modified: 30 Jan 2022
+# Created: 28 Jan 2022   Modified: 1 Mar 2022
 
 
 # Dependencies
@@ -55,7 +55,7 @@ reachplot <- ggplot(insect_richness, aes(x=Reach, y=sp_richness)) +
 ggarrange(siteplot, reachplot, ncol=2)
 ggsave(file = here("Figures", "total_insect_rich_species_multipanel.png"), width = 8, height = 4)
 
-###====Fig. 2: Gross Insecta Richness (genus) across Creeks, and by reach======
+###====Fig. 2a, 2b: Gross Insecta Richness (genus) across Creeks, and by reach======
 
 siteplot <- ggplot(insect_richness, aes(x=Site, y=genus_richness)) + 
   geom_boxplot(aes(fill=Site)) + 
@@ -78,7 +78,8 @@ reachplot <- ggplot(insect_richness, aes(x=Reach, y=genus_richness)) +
 ggarrange(siteplot, reachplot, ncol=2)
 ggsave(file = here("Figures", "total_insect_rich_genus_multipanel.png"), width = 8, height = 4)
 
-###====Insecta Richness (asv) for IBI orders across Creeks======
+
+###====Insecta Richness (asv) for IBI orders across Creeks & months======
 
 # IBI orders = ephemeroptera, trichoptera, plecoptera
 
