@@ -1,6 +1,6 @@
 ###=== Characterizing Creek Communities among Bellingham Creeks - Richness======
 # Written by Helen Casendino (hcas1024@uw.edu) & Ezza 
-# Created: 28 Jan 2022   Modified: 1 Mar 2022
+# Created: 28 Jan 2022   Modified: 4 Mar 2022
 
 
 # Dependencies
@@ -13,6 +13,7 @@ library(gridExtra)
 # Read In Data 
 asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
 asv_reads_annotated <- asv_reads_annotated %>% filter(mmyy != "521" & mmyy != "621" & mmyy != "721") # FOR NOW, we'll remove may june and july because messed up sequencing runs
+asv_reads_annotated[which(asv_reads_annotated$Reach == "Up11" | asv_reads_annotated$Reach == "Up5"), "Reach"] <- "Up" # for richness, group padden up sites
 
 # summary stats
 length(which(asv_reads_annotated$class == "Insecta")) / nrow(asv_reads_annotated) # Classified Insects make up 0.17% of asv instances
@@ -22,10 +23,8 @@ asv_reads_annotated %>% group_by(class) %>% mutate(ClassReadSum = sum(nReads)) %
   group_by(class) %>% summarise(proportion = unique(propReads)) %>% filter(class == "Insecta") # Classified Insects make up 0.48% of total reads
 
 
-###====Fig. 1a, 1b: Gross Insecta Richness (species) across Creeks, and by reach (PLUS FIGURE FACETED BY SITE)======
+###====Fig. 1a, 1b: Gross Insecta Richness (species) across Creeks, and by reach======
 # richness is collapsed by bottle, but still separated by reach
-
-asv_reads_annotated[which(asv_reads_annotated$Reach == "Up11" | asv_reads_annotated$Reach == "Up5"), "Reach"] <- "Up" # for richness, group padden up sites
 
 insect_richness <-  asv_reads_annotated %>% filter(class == "Insecta") %>%
                    filter(!is.na(genus)) %>% 
@@ -39,7 +38,7 @@ siteplot <- ggplot(insect_richness, aes(x=Site, y=sp_richness)) +
   scale_fill_viridis_d(option = "viridis", begin = 0.2, end = 0.9)  +
     theme_bw() +
   theme(strip.background =element_rect(fill="white")) + 
-  labs(title = "Insecta Richness by Site", y = "Species Richness", x = "") + 
+  labs( title = "Insecta Richness by Site and Month", y = "Species Richness", x = "") + 
   theme(legend.position="none") + 
   scale_x_discrete( labels= c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"))
 
@@ -49,7 +48,7 @@ reachplot <- ggplot(insect_richness, aes(x=Reach, y=sp_richness)) +
   scale_fill_viridis_d(option = "viridis", begin = 0.4, end = 1)  +
   theme_bw() +
   theme(strip.background =element_rect(fill="white")) + 
-  labs(title = "Insecta Richness by Reach and Site", y = "Species Richness", x = "") + 
+  labs( y = "Species Richness", x = "") + 
   theme(legend.position="none") + 
   scale_x_discrete( labels= c("Downstream", "Upstream"))
 
@@ -78,13 +77,18 @@ reachplot <- ggplot(insect_richness, aes(x=Reach, y=genus_richness)) +
 
 ggarrange(siteplot, reachplot, ncol=2)
 ggsave(file = here("Figures", "total_insect_rich_genus_multipanel.png"), width = 8, height = 4)
-###====Fig. 2a, 2b: Relative Insecta Richness up/downstream, by month and creek ======
+###====Fig. 2: Relative Insecta Richness up/downstream (sp), by month and creek ======
 
 reach_diff <- insect_richness %>%
   select(Sample, Reach, sp_richness) %>% 
   distinct() %>%
   pivot_wider(names_from = Reach, values_from = sp_richness) %>% 
-  mutate(richness_diffs = Up - Dn) %>% select(Sample, richness_diffs)
+  mutate(richness_diffs = Up - Dn) %>%
+  mutate(new_richness_diffs = case_when(richness_diffs == 0 & Up != 0 ~ 0.01,  #need to show on plot a thin band when the difference b/w up and down is zero because there is a nonzero amt on both sides, not just zero)
+                                        TRUE ~ as.numeric(richness_diffs))) %>% ungroup() %>%
+  select(Sample, new_richness_diffs)
+
+reach_diff <- reach_diff %>% rename("richness_diffs" = new_richness_diffs )
 
 richness_reach_diff_df <- left_join(insect_richness, reach_diff)
 toplot <- richness_reach_diff_df %>% group_by(mmyy, Site) %>% 
@@ -92,9 +96,6 @@ toplot <- richness_reach_diff_df %>% group_by(mmyy, Site) %>%
         
 toplot$Site <- factor(toplot$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"  ))
 toplot$mmyy <- factor(toplot$mmyy, labels = c("March", "April", "August"))
-              
-  # fix this hard code (just need to show on plot a thin band when the difference b/w up and down is zero because there is a nonzero amt on both sides, not just zero)
-toplot[ which(toplot$richness_diffs == 0 & toplot$Site != "5Sqm") , "richness_diffs"] <- 0.01
 
 diffsplot <- ggplot(toplot, aes(x= Site, y=richness_diffs)) + 
         geom_bar(aes(fill = Site), stat="identity") + 
@@ -106,83 +107,57 @@ diffsplot <- ggplot(toplot, aes(x= Site, y=richness_diffs)) +
 
 ggsave(diffsplot, file = here("Figures", "relative_insect_rich_sp_month_site.png"), width = 7, height = 4)
 
-###====Insecta Richness (asv) for IBI orders across Creeks & months======
+###====Fig. 3: Insecta Richness (genus) for 3 IBI orders across Creeks & months======
 
-# IBI orders = ephemeroptera, trichoptera, plecoptera
+ibi_insect_richness <-  asv_reads_annotated %>% filter(class == "Insecta") %>%
+                filter(!is.na(genus))  #%>% 
+              # filter(!is.na(species) & species != "")
 
-ephem_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(genus) & order == "Ephemeroptera") %>% 
-  group_by(Sample, Biological.replicate) %>% 
-  mutate(e_richness = length(unique(genus))) %>% ungroup() 
+ibi_insect_richness <-  ibi_insect_richness %>% filter(order == "Ephemeroptera" | order =="Plecoptera" |order =="Trichoptera") %>% 
+      group_by(Sample, Reach, order) %>% 
+      mutate(ibi_richness = length(unique(genus))) %>%  # unique genuses per IBI order
+      ungroup() %>% 
+      select(mmyy, Site, Reach, order, ibi_richness) %>%
+      mutate(Site = case_when(Site == "2Brn" | Site == "3Chk" | Site == "5Sqm" ~ "unrestored",
+                              Site == "4Pad" ~ "Padden",
+                              Site == "1Prt" ~ "Portage")) %>% distinct()
+ibi_insect_richness$mmyy <- factor(ibi_insect_richness$mmyy, labels = c("March", "April", "August"))
+ibi_insect_richness$order <- factor(ibi_insect_richness$order, levels = c("Ephemeroptera", "Trichoptera", "Plecoptera"),  labels = c("Ephemeroptera", "Trichoptera", "Plecoptera") )
 
-pleco_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(genus) & order == "Plecoptera") %>% 
-  group_by(Sample, Biological.replicate) %>% 
-  mutate(p_richness = length(unique(genus))) %>% ungroup() 
+# plot 
+ibiplot <- ibi_insect_richness %>%
+        ggplot(aes(x= Site, y=ibi_richness)) + 
+        geom_boxplot(aes(fill = Site)) + 
+        facet_wrap( ~ order + mmyy) + 
+        scale_fill_viridis_d(option = "viridis", begin = 0.4, end = 1)  +
+        theme_minimal() +  theme( strip.background =element_rect(fill="white")) + 
+        labs(title = "IBI Genus Richness by Month and Site", y = "Insecta Genus Richness", x = "") 
 
-trich_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & !is.na(genus) & order == "Trichoptera") %>% 
-  group_by(Sample, Biological.replicate) %>% 
-  mutate(t_richness = length(unique(genus))) %>% ungroup()
+ggsave(file = here("Figures", "IBI_insect_rich_genus.png"), width = 8, height = 7)
 
-# plots
-v1 <- ggplot(ephem_richness, aes(x=Site, y=e_richness)) + 
-  geom_violin(aes(fill = Site))  + 
-  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
-  labs(title = "Genus Richness - Ephemeroptera", y = "Richness Per Bottle") +
-  theme_classic()  +  
-  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+###====Fig. 4: Relative Insecta Richness up/downstream (genus) for 3 IBI orders across Creeks & months======
 
-v2 <- ggplot(pleco_richness, aes(x=Site, y=p_richness)) + 
-  geom_violin(aes(fill = Site))  + 
-  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
-  labs(title = "Genus Richness - Plecoptera", y = "Richness Per Bottle") +
-  theme_classic()  +  
-  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
+ibi_insect_richness <-  asv_reads_annotated %>% filter(class == "Insecta") %>%
+        filter(!is.na(genus)) %>% 
+         filter(order == "Ephemeroptera" | order =="Plecoptera" |order =="Trichoptera") %>% 
+          group_by(Sample, Reach, order) %>% 
+         mutate(ibi_richness = length(unique(genus))) %>%
+         select(mmyy, Site, Reach, order, ibi_richness) %>% 
+           distinct() %>%
+         pivot_wider(names_from = Reach, values_from = ibi_richness, values_fill = 0) %>% 
+         mutate(richness_diffs = Up - Dn) %>%  # Get difference in richness by order, month, site
+        mutate(new_richness_diffs = case_when(richness_diffs == 0 & Up != 0 ~ 0.1,  #need to show on plot a thin band when the difference b/w up and down is zero because there is a nonzero amt on both sides, not just zero)
+                                          TRUE ~ as.numeric(richness_diffs)))  %>% ungroup() %>% 
+         select(!c(Sample, Dn, Up, richness_diffs)) %>% distinct()
 
-v3 <- ggplot(trich_richness, aes(x=Site, y=t_richness)) + 
-  geom_violin(aes(fill = Site))  + 
-  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
-  labs(title = "Genus Richness - Trichoptera", y = "Richness Per Bottle") +
-  theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
+ibi_insect_richness$Site <- factor(ibi_insect_richness$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"  ))
+ibi_insect_richness$mmyy <- factor(ibi_insect_richness$mmyy, labels = c("March", "April", "August"))
 
-ggarrange(v1, v2, v3, ncol = 3, nrow = 1)
-ggsave(file = here("Figures", "IBI_insect_rich_genus.png"), width = 15, height = 4)
+diffsplot2 <- ggplot(ibi_insect_richness, aes(x= Site, y=new_richness_diffs)) + 
+  geom_bar(aes(fill = Site), stat="identity") + 
+  facet_wrap( ~ order + mmyy) + 
+  scale_fill_viridis_d(option = "viridis", begin = 0.4, end = 1)  +
+  theme_minimal() +  theme( strip.background =element_rect(fill="white")) + 
+  labs(title = "Reach Differences in IBI Richness", x = "Site", y = "Relative Genus Richness (Up - Down)", x = "")
 
-# IBI orders = ephemeroptera, trichoptera, plecoptera
-
-ephem_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & order == "Ephemeroptera") %>% 
-  group_by(Sample, Biological.replicate) %>% 
-  mutate(e_richness = length(unique(Hash))) %>% ungroup() %>% #to make plotting 0s easier bc portage has no ephem, I'll add a row
-  add_row(Site = "1Prt", e_richness = 0)
-
-pleco_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & order == "Plecoptera") %>% 
-  group_by(Sample, Biological.replicate) %>% 
-  mutate(p_richness = length(unique(Hash))) %>% ungroup() 
-
-trich_richness <-  asv_reads_annotated %>% filter(class == "Insecta" & order == "Trichoptera") %>% 
-  group_by(Sample, Biological.replicate) %>% 
-  mutate(t_richness = length(unique(Hash))) %>% ungroup()
-
-# plots
-v1 <- ggplot(ephem_richness, aes(x=Site, y=e_richness)) + 
-  geom_violin(aes(fill = Site))  + ylim(c(0,8)) + 
-  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
-  labs(title = "Ephemeroptera", y = "Richness Per Bottle") +
-  theme_classic()  +  
-  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
-
-v2 <- ggplot(pleco_richness, aes(x=Site, y=p_richness)) + 
-  geom_violin(aes(fill = Site))  + ylim(c(0,8)) + 
-  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
-  labs(title = "Plecoptera", y = "Richness Per Bottle") +
-  theme_classic()  +  
-  theme(legend.position = "none", plot.title = element_text(hjust = 0.5))
-
-v3 <- ggplot(trich_richness, aes(x=Site, y=t_richness)) + 
-  geom_violin(aes(fill = Site))  + ylim(c(0,8)) + 
-  scale_fill_brewer(palette="Blues") +  stat_summary(fun.y=mean, geom="point", shape=23, size=2) + 
-  labs(title = "Trichoptera", y = "Richness Per Bottle") +
-  theme_classic()  +  theme(plot.title = element_text(hjust = 0.5))
-
-ggarrange(v1, v2, v3, ncol = 3, nrow = 1)
-ggsave(file = here("Figures", "IBI_insect_rich_asv.png"), width = 15, height = 4)
-
-
+ggsave(diffsplot2, file = here("Figures", "relative_ibi_rich_genus_month_site.png"), width = 10, height = 6)
