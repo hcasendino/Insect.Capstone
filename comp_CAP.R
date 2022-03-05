@@ -56,7 +56,7 @@ cap2 <- cap1[["CCA"]][["wa"]] %>%
   geom_point(aes(color = Site), size = 3) +
   geom_segment(aes(x = 0, y = 0,
      xend = CAP1,
-     yend = CAP2), data = Top50[1:20,], color = "blue", arrow = arrow(length = unit(0.1,"cm"))) +
+     yend = CAP2), data = Top50[1:20,], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
   geom_label_repel(aes(x= CAP1  ,
                       y= CAP2 ,  label = species),
                    data = Top50[1:20,], fill = "orange", alpha = 0.75, max.overlaps = 13) + 
@@ -65,18 +65,11 @@ cap2 <- cap1[["CCA"]][["wa"]] %>%
 
 ggsave(file = here("Figures", "CAP_Site.png"), width = 9, height = 6)
 
-###====Fig 2: Month differences, faceted by site (capscale)======
+###====Fig 2: Month differences, sp vectors(capscale)======
 
-plist <- list()
-sitevec <- unique(covariates$Site)
-for(i in 1:length(sitevec)){
-
-   siterows <- which(covariates$Site == sitevec[i]) # everything corresponding to specified site
-   cov <- covariates[siterows,]
-   hash <- hashes[siterows,]
-  
-   cap1 <- capscale(hash ~ mmyy,data=cov, distance= "jaccard") # all cap analysis 
-   sppscores(cap1) <- hash
+   cap1 <- capscale(hashes ~ mmyy,data=covariates, distance= "jaccard") 
+   sppscores(cap1) <- hashes
+   
    ASVvectors <- cap1[["CCA"]][["v"]] %>% as.data.frame 
    CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
    CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
@@ -84,127 +77,87 @@ for(i in 1:length(sitevec)){
    CAP.ASVid <- merge(CAPorder, asv_reads_annotated[,c("Hash","order", "family", "genus", "species")], by=c("Hash"), all.x=FALSE, all.y=TRUE)
    Top50 <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1)) %>% head(50)
   
-   plist[[i]] <- cap1[["CCA"]][["wa"]] %>% # plotting
+ cap2<- cap1[["CCA"]][["wa"]] %>% # plotting
      as.data.frame() %>%
-     bind_cols(cov) %>% 
+     bind_cols(covariates) %>% 
      ggplot(aes(x = CAP1,
-                y = CAP1)) +  geom_point(size = 1.5) +  geom_point(aes(color = mmyy), size = 3) +
+                y = CAP2)) +  geom_point(size = 1.5) +  geom_point(aes(color = mmyy), size = 3) +
      geom_segment(aes(x = 0, y = 0,
                       xend = CAP1,
-                      yend = CAP1), data = Top50[1:10,], color = "blue", arrow = arrow(length = unit(0.1,"cm"))) +
-     geom_label_repel(aes(x= CAP1  ,  y= CAP1 ,  label = species), data = Top50[1:10,], fill = "orange", alpha = 0.75, max.overlaps = 8, nudge_y = 0.025, nudge_x= 0.025 ) + 
+                      yend = CAP2), data = Top50, color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
+     geom_label_repel(aes(x= CAP1  ,  y= CAP2 ,  label = species), data = Top50, fill = "olivedrab3", alpha = 0.75, max.overlaps = 23, nudge_y = 0.025, nudge_x= 0.025 ) + 
      scale_color_viridis_d(option = "plasma", begin = .4, end = 0.9) + 
-      labs(color = "Month") + theme_bw() +  theme(legend.position="none")
-   }
+      labs(color = "Month") +  theme_bw()  +
+        theme(legend.title = element_text(size = 15), legend.text = element_text(size =10)) 
 
-ggarrange(plist[[1]] + labs(title = "Portage", x = "") , 
-          plist[[2]] + labs(title = "Barnes", x = "", y = "")  , 
-          plist[[3]]+ labs(title = "Chuckanut", y = "") + theme(legend.position = "right", legend.title = element_text(size=15), legend.text = element_text(size=12))  ,
-          plist[[4]]+ labs(title = "Squalicum") ,
-          plist[[5]] + labs(title = "Padden", y = "") ,
-          col=3)
-ggsave(file = here("Figures", "CAP_Site_Month.png"), width = 12, height = 10)
+ggsave(file = here("Figures", "CAP_Month.png"), width = 10, height = 8)
 
+###====Fig 3: Padden & Portage month and reach, sp vectors (capscale)======
 
-###====Fig 3: Reach differences, faceted by site, where august is excluded or included (NOT WORKING)(capscale)======
+# PADDEN
+padrows <- which(covariates$Site == "Padden")
+padcovariates <- covariates[padrows,]
+padhashes <- hashes[padrows,]
+padcovariates[which(padcovariates$Reach == "Up11" | padcovariates$Reach == "Up5"), "Reach"] <- "Up" # group padden up sites
 
-# SPRING
-
-springrows <- which(covariates$mmyy != "821")
-springcovariates <- covariates[springrows,]
-springhashes <- hashes[springrows,]
-springcovariates <- springcovariates %>% mutate(Site = case_when(Site == "Barnes" | Site == "Chuckanut" | Site == "Squalicum" ~ "unrestored",
-                                                                 Site == "Padden" ~ "Padden",
-                                                                 Site == "Portage" ~ "Portage"))
-
-springcovariates[which(springcovariates$Reach == "Up11" | springcovariates$Reach == "Up5"), "Reach"] <- "Up" # for richness, group padden up sites
-
-plist <- list()
-sitevec <- unique(springcovariates$Site)
-for(i in 1:length(sitevec)){
+cap1 <- capscale(padhashes ~ Reach*mmyy,data=padcovariates, distance= "jaccard") # all cap analysis 
+sppscores(cap1) <- padhashes
+ 
+ASVvectors <- cap1[["CCA"]][["v"]] %>% as.data.frame 
+CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
+CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
+rownames(CAPorder) <- NULL
+CAP.ASVid <- merge(CAPorder, asv_reads_annotated[,c("Hash","order", "family", "genus", "species")], by=c("Hash"), all.x=FALSE, all.y=TRUE)
+Top50 <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1)) %>% head(50)
   
-  siterows <- which(springcovariates$Site == sitevec[i]) # everything corresponding to specified site
-  cov <- springcovariates[siterows,]
-  hash <- springhashes[siterows,]
-  
-  cap1 <- capscale(hash ~ Reach,data=cov, distance= "jaccard") # all cap analysis 
-  sppscores(cap1) <- hash
-  ASVvectors <- cap1[["CCA"]][["v"]] %>% as.data.frame 
-  CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
-  CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
-  rownames(CAPorder) <- NULL
-  CAP.ASVid <- merge(CAPorder, asv_reads_annotated[,c("Hash","order", "family", "genus", "species")], by=c("Hash"), all.x=FALSE, all.y=TRUE)
-  Top50 <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1)) %>% head(50)
-  
-  plist[[i]] <- cap1[["CCA"]][["wa"]] %>% # plotting
+ cap3 <- cap1[["CCA"]][["wa"]] %>% # plotting
     as.data.frame() %>%
-    bind_cols(cov) %>% 
+    bind_cols(padcovariates) %>% 
     ggplot(aes(x = CAP1,
-               y = CAP1)) +  geom_point(size = 1.5) +  geom_point(aes(color = Reach), size = 3) +
+               y = CAP2)) +  geom_point(size = 1.5) +  geom_point(aes(shape=mmyy, color = Reach), size = 3) +
     geom_segment(aes(x = 0, y = 0,
                      xend = CAP1,
-                     yend = CAP1), data = Top50[1:10,], color = "blue", arrow = arrow(length = unit(0.1,"cm"))) +
-    geom_label_repel(aes(x= CAP1  ,  y= CAP1 ,  label = species), data = Top50[1:10,], fill = "orange", alpha = 0.75, max.overlaps = 25, nudge_y = 0.1, nudge_x= 0.1 ) + 
-    scale_color_viridis_d(option = "viridis", begin = 0, end = 1) + 
-    labs(color = "Reach") + theme_bw() +  theme(legend.position="none")
-}
+                     yend = CAP2), data = Top50, color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
+    geom_label_repel(aes(x= CAP1  ,  y= CAP2 ,  label = species), data = Top50, fill = "mediumpurple1", alpha = 0.75, max.overlaps = 20, nudge_y = 0.1, nudge_x= 0.1 ) + 
+    scale_color_viridis_d(option = "magma", begin = .2, end = .9) + 
+    labs(title = "Padden", color = "Reach", shape = "Month") + theme_bw()  + 
+   coord_cartesian(xlim = c(-0.25, 0.6), ylim = c(-0.5, 0.5)) + 
+   theme(legend.position = "none")
+ 
 
-
-
-
-
-# FALL (ignore labels of spring)
-
-springrows <- which(covariates$mmyy == "821")
-springcovariates <- covariates[springrows,]
-springhashes <- hashes[springrows,]
-springcovariates <- springcovariates %>% mutate(Site = case_when(Site == "Barnes" | Site == "Chuckanut" | Site == "Squalicum" ~ "unrestored",
-                                                                 Site == "Padden" ~ "Padden",
-                                                                 Site == "Portage" ~ "Portage"))
-
-springcovariates[which(springcovariates$Reach == "Up11" | springcovariates$Reach == "Up5"), "Reach"] <- "Up" # for richness, group padden up sites
-
-plist2 <- list()
-sitevec <- unique(springcovariates$Site)
-for(i in 1:length(sitevec)){
-  
-  siterows <- which(springcovariates$Site == sitevec[i]) # everything corresponding to specified site
-  cov <- springcovariates[siterows,]
-  hash <- springhashes[siterows,]
-  
-  cap1 <- capscale(hash ~ Reach,data=cov, distance= "jaccard") # all cap analysis 
-  sppscores(cap1) <- hash
-  ASVvectors <- cap1[["CCA"]][["v"]] %>% as.data.frame 
-  CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
-  CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
-  rownames(CAPorder) <- NULL
-  CAP.ASVid <- merge(CAPorder, asv_reads_annotated[,c("Hash","order", "family", "genus", "species")], by=c("Hash"), all.x=FALSE, all.y=TRUE)
-  Top50 <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1)) %>% head(50)
-  
-  plist2[[i]] <- cap1[["CCA"]][["wa"]] %>% # plotting
-    as.data.frame() %>%
-    bind_cols(cov) %>% 
-    ggplot(aes(x = CAP1,
-               y = CAP1)) +  geom_point(size = 1.5) +  geom_point(aes(color = Reach), size = 3) +
-    geom_segment(aes(x = 0, y = 0,
-                     xend = CAP1,
-                     yend = CAP1), data = Top50[1:10,], color = "blue", arrow = arrow(length = unit(0.1,"cm"))) +
-    geom_label_repel(aes(x= CAP1  ,  y= CAP1 ,  label = species), data = Top50[1:10,], fill = "orange", alpha = 0.75, max.overlaps = 25, nudge_y = 0.1, nudge_x= 0.1 ) + 
-    scale_color_viridis_d(option = "viridis", begin = 0, end = 1) + 
-    labs(color = "Reach") + theme_bw() +  theme(legend.position="none")
-}
-
-
-
-# PLOT ALL 
-ggarrange(plist[[1]] + labs(title = "Portage - Spring", x = "") , 
-          plist[[2]] + labs(title = "Unrestored - Spring", x = "", y = "")  , 
-          plist[[3]]+ labs(title = "Padden - Spring", y = "", x= "") + theme(legend.position = "right"),
-         # plist2[[1]]+ labs(title = "Portage") ,
-         # plist2[[2]] + labs(title = "Unrestored", y = "") ,
-        #  plist2[[3]] + labs(title = "Padden", y = ""),
-          row=1)
-ggsave(file = here("Figures", "CAP_Spring_Site_Reach.png"), width = 10, height = 8)
+# PORTAGE (ignore pad naming)
+ padrows <- which(covariates$Site == "Portage")
+ padcovariates <- covariates[padrows,]
+ padhashes <- hashes[padrows,]
+ padcovariates[which(padcovariates$Reach == "Up11" | padcovariates$Reach == "Up5"), "Reach"] <- "Up" # group padden up sites
+ 
+ cap1 <- capscale(padhashes ~ Reach*mmyy,data=padcovariates, distance= "jaccard") # all cap analysis 
+ sppscores(cap1) <- padhashes
+ 
+ ASVvectors <- cap1[["CCA"]][["v"]] %>% as.data.frame 
+ CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
+ CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
+ rownames(CAPorder) <- NULL
+ CAP.ASVid <- merge(CAPorder, asv_reads_annotated[,c("Hash","order", "family", "genus", "species")], by=c("Hash"), all.x=FALSE, all.y=TRUE)
+ Top50 <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1)) %>% head(50)
+ 
+ cap4 <- cap1[["CCA"]][["wa"]] %>% # plotting
+   as.data.frame() %>%
+   bind_cols(padcovariates) %>% 
+   ggplot(aes(x = CAP1,
+              y = CAP2)) +  geom_point(size = 1.5) +  geom_point(aes(shape=mmyy, color = Reach), size = 3) +
+   geom_segment(aes(x = 0, y = 0,
+                    xend = CAP1,
+                    yend = CAP2), data = Top50, color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
+   geom_label_repel(aes(x= CAP1  ,  y= CAP2 ,  label = species), data = Top50, fill = "mediumpurple1", alpha = 0.75, max.overlaps = 24, nudge_y = 0.1, nudge_x= 0.1 ) + 
+   scale_color_viridis_d(option = "magma", begin = .2, end = .9) + 
+   labs(title = "Portage", shape = "Month", color = "Reach", y ="") + theme_bw()  + 
+   coord_cartesian(xlim = c(-0.25, 0.6), ylim = c(-0.5, 0.5)) + 
+   theme(legend.position = c(0.7, 0.15), legend.box = "horizontal",
+         legend.background = element_rect(fill="white",size = 1, linetype="solid", 
+                                          colour ="darkslateblue"))
+ggarrange(cap3, cap4)
+ggsave(file = here("Figures", "CAP_PortPad_Month_Reach.png"), width = 9, height = 6)
 
 ###====For Ezza, up11 vs dn, up5 vs down=====
 
