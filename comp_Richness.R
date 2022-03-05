@@ -38,7 +38,7 @@ siteplot <- ggplot(insect_richness, aes(x=Site, y=sp_richness)) +
   scale_fill_viridis_d(option = "viridis", begin = 0.2, end = 0.9)  +
     theme_bw() +
   theme(strip.background =element_rect(fill="white")) + 
-  labs( title = "Insecta Richness by Site and Month", y = "Species Richness", x = "") + 
+  labs( title = "Insecta Richness by Site and Reach", y = "Species Richness", x = "") + 
   theme(legend.position="none") + 
   scale_x_discrete( labels= c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"))
 
