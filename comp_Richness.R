@@ -1,6 +1,6 @@
 ###=== Characterizing Creek Communities among Bellingham Creeks - Richness======
 # Written by Helen Casendino (hcas1024@uw.edu) & Ezza 
-# Created: 28 Jan 2022   Modified: 4 Mar 2022
+# Created: 28 Jan 2022   Modified: 10 Mar 2022
 
 
 # Dependencies
@@ -77,6 +77,7 @@ reachplot <- ggplot(insect_richness, aes(x=Reach, y=genus_richness)) +
 
 ggarrange(siteplot, reachplot, ncol=2)
 ggsave(file = here("Figures", "total_insect_rich_genus_multipanel.png"), width = 8, height = 4)
+
 ###====Fig. 2: Relative Insecta Richness up/downstream (sp), by month and creek ======
 
 reach_diff <- insect_richness %>%
@@ -161,3 +162,17 @@ diffsplot2 <- ggplot(ibi_insect_richness, aes(x= Site, y=new_richness_diffs)) +
   labs(title = "Reach Differences in IBI Richness", x = "Site", y = "Relative Genus Richness (Up - Down)", x = "")
 
 ggsave(diffsplot2, file = here("Figures", "relative_ibi_rich_genus_month_site.png"), width = 10, height = 6)
+
+
+
+
+# 3/30 proportion of asvs within order that are classified to genus or sp
+step1 <- asv_reads_annotated %>%
+  select(Hash, order, family, genus, species) %>% 
+  filter(order == "Ephemeroptera") %>% distinct() %>% 
+  mutate(classified_as = case_when(genus != "" & species == ""  ~ "genus",
+                                   genus != "" & species != ""  ~ "species",
+                                   genus == "" & species == ""  ~ "neither")) 
+
+step1 %>% group_by(classified_as) %>% 
+  summarise(n = n()) %>% mutate(prop_classified = n/ nrow(step1))
