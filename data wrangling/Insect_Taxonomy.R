@@ -10,7 +10,7 @@ library(here)
 #####==== Read in Data & Clean ==========
 
 COI.hash.annotated <- readRDS(here("Input/COI.all.previous.hashes.annotated.rds"))
-COI_asvs <- read.csv(here("Input/20211230.combined.COI.ASV.table.csv"))
+COI_asvs <- read.csv(here("Input/20220401.combined.COI.ASV.table.csv"))
 
 ### COI ASV TABLE : Cleanup
 COI_asvs_ID_cols <- COI_asvs %>% 

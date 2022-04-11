@@ -12,8 +12,9 @@ library(gridExtra)
 
 # Read In Data 
 asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
-asv_reads_annotated <- asv_reads_annotated %>% filter(mmyy != "521" & mmyy != "621" & mmyy != "721") # FOR NOW, we'll remove may june and july because messed up sequencing runs
 asv_reads_annotated[which(asv_reads_annotated$Reach == "Up11" | asv_reads_annotated$Reach == "Up5"), "Reach"] <- "Up" # for richness, group padden up sites
+asv_reads_annotated <- asv_reads_annotated %>% 
+                          filter(mmyy != "Kangaroo" & Site != "Run")
 
 # summary stats
 length(which(asv_reads_annotated$class == "Insecta")) / nrow(asv_reads_annotated) # Classified Insects make up 0.17% of asv instances
@@ -122,7 +123,7 @@ ibi_insect_richness <-  ibi_insect_richness %>% filter(order == "Ephemeroptera" 
       mutate(Site = case_when(Site == "2Brn" | Site == "3Chk" | Site == "5Sqm" ~ "unrestored",
                               Site == "4Pad" ~ "Padden",
                               Site == "1Prt" ~ "Portage")) %>% distinct()
-ibi_insect_richness$mmyy <- factor(ibi_insect_richness$mmyy, labels = c("March", "April", "August"))
+ibi_insect_richness$mmyy <- factor(ibi_insect_richness$mmyy, labels = c("March", "April", "May", "June", "July", "August"))
 ibi_insect_richness$order <- factor(ibi_insect_richness$order, levels = c("Ephemeroptera", "Trichoptera", "Plecoptera"),  labels = c("Ephemeroptera", "Trichoptera", "Plecoptera") )
 
 # plot 
@@ -152,7 +153,7 @@ ibi_insect_richness <-  asv_reads_annotated %>% filter(class == "Insecta") %>%
          select(!c(Sample, Dn, Up, richness_diffs)) %>% distinct()
 
 ibi_insect_richness$Site <- factor(ibi_insect_richness$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"  ))
-ibi_insect_richness$mmyy <- factor(ibi_insect_richness$mmyy, labels = c("March", "April", "August"))
+ibi_insect_richness$mmyy <- factor(ibi_insect_richness$mmyy, labels = c("March", "April", "May", "June", "July", "August"))
 
 diffsplot2 <- ggplot(ibi_insect_richness, aes(x= Site, y=new_richness_diffs)) + 
   geom_bar(aes(fill = Site), stat="identity") + 
@@ -162,6 +163,14 @@ diffsplot2 <- ggplot(ibi_insect_richness, aes(x= Site, y=new_richness_diffs)) +
   labs(title = "Reach Differences in IBI Richness", x = "Site", y = "Relative Genus Richness (Up - Down)", x = "")
 
 ggsave(diffsplot2, file = here("Figures", "relative_ibi_rich_genus_month_site.png"), width = 10, height = 6)
+
+diffsplot1<- ggplot(ibi_insect_richness, aes(x= Site, y=new_richness_diffs)) + 
+  geom_bar(aes(fill = Site), stat="identity") + 
+  facet_wrap( ~ mmyy) + 
+  scale_fill_viridis_d(option = "viridis", begin = 0.4, end = 1)  +
+  theme_minimal() +  theme( strip.background =element_rect(fill="white")) + 
+  labs(title = "Reach Differences in IBI Richness", x = "Site", y = "Relative Genus Richness (Up - Down)", x = "")
+ggsave(diffsplot1, file = here("Figures", "relative_insect_rich_sp_month_site.png"), width = 10, height = 6)
 
 
 
