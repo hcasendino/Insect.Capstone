@@ -9,7 +9,6 @@ library(here)
 library(vegan)
 library(ggpubr)
 library(ggrepel)
-library(cowplot)
 
 asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
 
@@ -32,7 +31,9 @@ for(i in 1:ncol(hashes)){
   hashes[,i]<-ifelse(hashes[,i] != 0,1,0)
 }
 
-###==== Fig 1: Site differences, sp vectors (capscale)======
+###==== Fig 1 & 2: Site differences (across and by month), sp vectors (capscale)======
+
+#### FIG 1 = SITE DIFFS ACROSS MONTH 
 
 cap1 <- capscale(hashes~ Site,data=covariates, distance= "jaccard")
 sppscores(cap1) <- hashes
@@ -67,8 +68,180 @@ cap2 <- cap1[["CCA"]][["wa"]] %>%
 
 ggsave(file = here("Figures", "CAP_Site.png"), width = 8, height = 7)
 
-###====Fig 2: Month differences, sp vectors(capscale)======
+#### FIG 2 = SITE DIFFS ACCOUNTING FOR MONTH 
 
+# data wrangling to group by month 
+
+wrangle_by_month <- function(month1, month2){
+  return(asv_reads_annotated %>% filter(class == "Insecta" & (mmyy == month1 | mmyy == month2)) %>%
+    select(mmyy, Site, Reach, Biological.replicate, nReads, species) %>% 
+    group_by(mmyy, Site, Reach, Biological.replicate, species) %>% summarise(nReads = mean(nReads)) %>% 
+    filter(species != "") %>% 
+    pivot_wider(names_from = species, values_from = nReads, values_fill = 0) %>% # each species has column with nReads info
+    ungroup())
+}
+get_CAP_plot <- function(covariates_hashes){ 
+ 
+   covariates <- covariates_hashes %>% select(c(mmyy, Site , Reach ,Biological.replicate)) # month, site, reach, bottle info
+    covariates$Site <- factor(covariates$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"  ))
+  
+ 
+  hashes <- covariates_hashes %>% select(!c(mmyy, Site , Reach ,Biological.replicate)) # hash cols with binary read info (now they're species cols, but I don't want to change variable names rn)
+  for(i in 1:ncol(hashes)){
+    hashes[,i]<-ifelse(hashes[,i] != 0,1,0)
+  }
+  
+  cap1 <- capscale(hashes~ Site,data=covariates, distance= "jaccard")
+  sppscores(cap1) <- hashes
+  ASVvectors <- cap1[["CCA"]][["v"]] %>% as.data.frame 
+  CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
+  CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
+  rownames(CAPorder) <- NULL
+  CAP.ASVid <- CAPorder %>% distinct() %>% arrange(desc(CAP1))
+  Top50 <- CAP.ASVid %>% head(50) %>% rename("species" = "Hash")
+  
+  cap2 <- cap1[["CCA"]][["wa"]] %>%
+    as.data.frame() %>%
+    bind_cols(covariates) %>% 
+    ggplot(aes(x = CAP1,
+               y = CAP2)) +
+    geom_point(size = 1.5) +
+    geom_point(aes(color = Site), size = 3) +
+    geom_segment(aes(x = 0, y = 0,
+                     xend = CAP1,
+                     yend = CAP2), data = Top50[1:10,], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
+    geom_label_repel(size = 2, aes(x= CAP1  ,
+                                   y= CAP2 ,  label = species),
+                     data = Top50[1:10,], fill = "orange", alpha = 0.75, max.overlaps = 18) + 
+    scale_color_viridis_d(option = "viridis", begin = .1, end = 1) + 
+    theme_bw() 
+  
+  return(cap2)
+  }
+
+# making month plots
+covariates_hashes <- wrangle_by_month("0321","0421")
+cap1 <- get_CAP_plot(covariates_hashes)
+
+covariates_hashes <- wrangle_by_month("0521","0621")
+cap2 <- get_CAP_plot(covariates_hashes)
+
+covariates_hashes <- wrangle_by_month("0721","0821")
+cap3 <- get_CAP_plot(covariates_hashes)
+
+fullplot <- ggarrange(cap1 + ggtitle("March-April")+ coord_cartesian(ylim = c(-0.4,0.7), xlim= c(-0.3,0.6)), 
+          cap2 + theme(axis.title.y = element_blank())  +  ggtitle("May-June")+ coord_cartesian(ylim = c(-0.4,0.7), xlim= c(-0.3,0.6)), 
+          cap3 + theme(axis.title.y = element_blank()) + ggtitle("July-August")+ coord_cartesian(ylim = c(-0.4,0.7), xlim= c(-0.3,0.6)),
+          common.legend = TRUE, 
+          legend = "right", ncol =3)
+
+ggsave(file = here("Figures", "CAP_Site_monthfacet.png"), width = 12, height = 5)
+
+
+
+
+
+
+###====Fig 3: Animated Site CAP=====
+wrangle_by_month <- function(month1){
+  return(asv_reads_annotated %>% filter(class == "Insecta" & (mmyy == month1)) %>%
+           select(mmyy, Site, Reach, Biological.replicate, nReads, species) %>% 
+           group_by(mmyy, Site, Reach, Biological.replicate, species) %>% summarise(nReads = mean(nReads)) %>% 
+           filter(species != "") %>% 
+           pivot_wider(names_from = species, values_from = nReads, values_fill = 0) %>% # each species has column with nReads info
+           ungroup())
+}
+get_CAP_df <- function( month , covariates_hashes){ 
+  
+  covariates <- covariates_hashes %>% select(c(mmyy, Site , Reach ,Biological.replicate)) 
+  
+  if(month != "0821"){
+    covariates$Site <- factor(covariates$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"))
+  } else {
+    covariates$Site <- factor(covariates$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden"))
+  }
+ 
+  hashes <- covariates_hashes %>% select(!c(mmyy, Site , Reach ,Biological.replicate)) 
+  for(i in 1:ncol(hashes)){
+    hashes[,i]<-ifelse(hashes[,i] != 0,1,0)
+  }
+  
+  cap1 <- capscale(hashes~ Site,data=covariates, distance= "jaccard")
+  sppscores(cap1) <- hashes
+ 
+  return(cap1[["CCA"]][["wa"]] %>%
+    as.data.frame() %>%
+    bind_cols(covariates))
+}
+
+covariates_hashes <- wrangle_by_month("0321")
+output1 <- get_CAP_df("0321", covariates_hashes)
+output1 <- output1 %>% select(CAP1, CAP2, mmyy, Site) 
+
+covariates_hashes <- wrangle_by_month("0421")
+output2 <- get_CAP_df("0421", covariates_hashes)
+output2 <- output2 %>% select(CAP1, CAP2, mmyy, Site) 
+
+covariates_hashes <- wrangle_by_month("0521")
+output3 <- get_CAP_df("0521", covariates_hashes)
+output3 <- output3 %>% select(CAP1, CAP2, mmyy, Site) 
+
+covariates_hashes <- wrangle_by_month("0621")
+output4 <- get_CAP_df("0621", covariates_hashes)
+output4 <- output4 %>% select(CAP1, CAP2, mmyy, Site) 
+
+covariates_hashes <- wrangle_by_month("0721")
+output5 <- get_CAP_df("0721", covariates_hashes)
+output5 <- output5 %>% select(CAP1, CAP2, mmyy, Site) 
+
+covariates_hashes <- wrangle_by_month("0821")
+output6 <- get_CAP_df("0821", covariates_hashes)
+output6 <- output6 %>% select(CAP1, CAP2, mmyy, Site) 
+
+cap.coords <- rbind(output1, output2, output3, output4, output5, output6)
+
+library(gganimate)
+library(gifski)
+library(av)
+
+cap.coords$mmyy <- as.numeric(cap.coords$mmyy)
+
+p1 <- cap.coords %>%
+  ggplot(aes(x = CAP1,
+             y = CAP2)) +
+  geom_point(size = 1.5) +
+  geom_point(aes(color = Site), size = 3) +
+  scale_color_viridis_d(option = "viridis", begin = .1, end = 1) + 
+  theme_bw()  + 
+  labs(title = 'Month: {round(frame_time)}') +
+  transition_time(mmyy) + 
+  ease_aes('linear')
+
+anim <- animate(p1, duration = 20, fps = 10, width = 400, height = 400, renderer = gifski_renderer(loop = F))
+anim_save('output.gif')
+
+
+###====Fig 4: Month diffs only, sp vectors(capscale)======
+
+# Data wrangling, once more 
+
+covariates_hashes <- asv_reads_annotated %>% filter(class == "Insecta") %>%
+  select(mmyy, Site, Reach, Biological.replicate, nReads, species) %>% 
+  group_by(mmyy, Site, Reach, Biological.replicate, species) %>% summarise(nReads = mean(nReads)) %>% 
+  filter(species != "") %>% 
+  pivot_wider(names_from = species, values_from = nReads, values_fill = 0) %>% # each species has column with nReads info
+  ungroup()
+
+covariates <- covariates_hashes %>% select(c(mmyy, Site , Reach ,Biological.replicate)) # month, site, reach, bottle info
+covariates$Site <- factor(covariates$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"  ))
+covariates$mmyy <- factor(covariates$mmyy, labels = c("March", "April", "May", "June", "July", "August"))
+
+hashes <- covariates_hashes %>% select(!c(mmyy, Site , Reach ,Biological.replicate)) # hash cols with binary read info (now they're species cols, but I don't want to change variable names rn)
+for(i in 1:ncol(hashes)){
+  hashes[,i]<-ifelse(hashes[,i] != 0,1,0)
+}
+
+# cap
    cap1 <- capscale(hashes ~ mmyy,data=covariates, distance= "jaccard") 
    sppscores(cap1) <- hashes
    
@@ -76,9 +249,10 @@ ggsave(file = here("Figures", "CAP_Site.png"), width = 8, height = 7)
    CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
    CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
    rownames(CAPorder) <- NULL
-   CAP.ASVid <- merge(CAPorder, asv_reads_annotated[,c("Hash","order", "family", "genus", "species")], by=c("Hash"), all.x=FALSE, all.y=TRUE)
-   Top50 <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1)) %>% head(50)
-  
+   CAP.ASVid <- CAPorder %>% distinct() %>% arrange(desc(CAP1))
+    Top50 <- CAP.ASVid %>% head(50) %>% rename("species" = "Hash")
+    write.csv(Top50, "CAPanalysis_Month_Top50DescASVs.csv")
+    
  cap2<- cap1[["CCA"]][["wa"]] %>% # plotting
      as.data.frame() %>%
      bind_cols(covariates) %>% 
@@ -86,13 +260,13 @@ ggsave(file = here("Figures", "CAP_Site.png"), width = 8, height = 7)
                 y = CAP2)) +  geom_point(size = 1.5) +  geom_point(aes(color = mmyy), size = 3) +
      geom_segment(aes(x = 0, y = 0,
                       xend = CAP1,
-                      yend = CAP2), data = Top50[1:40,], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
-     geom_label_repel(aes(x= CAP1  ,  y= CAP2 ,  label = species), data = Top50[1:40,], fill = "orange", alpha = 0.75, max.overlaps = 23, nudge_y = 0.025, nudge_x= 0.025 ) + 
+                      yend = CAP2), data = Top50[1:15,], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
+     geom_label_repel(size = 2, aes(x= CAP1  ,  y= CAP2 ,  label = species), data = Top50[1:15,], fill = "orange", alpha = 0.75, max.overlaps = 18, nudge_y = 0.025, nudge_x= 0.025 ) + 
      scale_color_viridis_d(option = "plasma", begin = .1, end = 0.9) + 
       labs(color = "Month") +  theme_bw()  +
         theme(legend.title = element_text(size = 15), legend.text = element_text(size =10)) 
 
-ggsave(file = here("Figures", "CAP_Month.png"), width = 9, height = 7)
+ggsave(file = here("Figures", "CAP_Month.png"), width = 8, height = 6)
 
 ###====Fig 3: Port and Pad only, sp vectors (capscale)======
 
