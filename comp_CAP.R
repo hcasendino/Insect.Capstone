@@ -9,6 +9,9 @@ library(here)
 library(vegan)
 library(ggpubr)
 library(ggrepel)
+library(gganimate)
+library(gifski)
+library(av)
 
 asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
 
@@ -199,10 +202,6 @@ output6 <- get_CAP_df("0821", covariates_hashes)
 output6 <- output6 %>% select(CAP1, CAP2, mmyy, Site) 
 
 cap.coords <- rbind(output1, output2, output3, output4, output5, output6)
-
-library(gganimate)
-library(gifski)
-library(av)
 
 cap.coords$mmyy <- as.numeric(cap.coords$mmyy)
 
