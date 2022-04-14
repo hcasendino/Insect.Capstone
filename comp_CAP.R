@@ -1,7 +1,7 @@
 ###=== Comparing Creek Communities among Bellingham Creeks======
 # Looking at differences in insect communities across creek, month, and reach (with CAP and PERMANOVA, using presence/absence)
 # Written by Helen Casendino (hcas1024@uw.edu) & Ezza 
-# Created: 28 Jan 2022   Modified: 10 Apr 2022
+# Created: 28 Jan 2022   Modified: 13 Apr 2022
 
 # Dependencies 
 library(tidyverse)
@@ -17,16 +17,17 @@ asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
 
 # there were technical replicates done on 05215SqmUp and 06214PadDn, but the different # of reads don't matter since I'm looking at p/a. So just averaging over them
 covariates_hashes <- asv_reads_annotated %>% filter(class == "Insecta") %>%
-        select(mmyy, Site, Reach, Biological.replicate, Hash, nReads) %>% 
-        group_by(mmyy, Site, Reach, Biological.replicate, Hash) %>% summarise(nReads = mean(nReads)) %>% 
-        pivot_wider(names_from = Hash, values_from = nReads, values_fill = 0) # each hash has column with nReads info
-
+  select(mmyy, Site, Reach, Biological.replicate, nReads, species) %>% 
+  group_by(mmyy, Site, Reach, Biological.replicate, species) %>% summarise(nReads = mean(nReads)) %>% 
+  filter(species != "") %>% 
+  pivot_wider(names_from = species, values_from = nReads, values_fill = 0) %>% # each species has column with nReads info
+  ungroup()
 
 covariates <- covariates_hashes %>% select(c(mmyy, Site , Reach ,Biological.replicate)) # month, site, reach, bottle info
 covariates$Site <- factor(covariates$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"  ))
 covariates$mmyy <- factor(covariates$mmyy, labels = c("March", "April", "May", "June", "July", "August"))
 
-hashes <- covariates_hashes %>% select(!c(mmyy, Site , Reach ,Biological.replicate)) # hash cols with binary read info 
+hashes <- covariates_hashes %>% select(!c(mmyy, Site , Reach ,Biological.replicate)) # hash cols with binary read info (now they're species cols, but I don't want to change variable names rn)
 for(i in 1:ncol(hashes)){
   hashes[,i]<-ifelse(hashes[,i] != 0,1,0)
 }
@@ -43,9 +44,8 @@ CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
 rownames(CAPorder) <- NULL
 
 #map on the classification of the ASVs to determine
-CAP.ASVid <- merge(CAPorder, asv_reads_annotated[,c("Hash","order", "family", "genus", "species")], by=c("Hash"), all.x=FALSE, all.y=TRUE)
-CAP.ASVid <- CAP.ASVid %>% distinct() %>% arrange(desc(CAP1))
-Top50 <- CAP.ASVid %>% head(50)
+CAP.ASVid <- CAPorder %>% distinct() %>% arrange(desc(CAP1))
+Top50 <- CAP.ASVid %>% head(50) %>% rename("species" = "Hash")
 write.csv(Top50, "CAPanalysis_Site_Top50DescASVs.csv")
 
 # plot
@@ -58,14 +58,14 @@ cap2 <- cap1[["CCA"]][["wa"]] %>%
   geom_point(aes(color = Site), size = 3) +
   geom_segment(aes(x = 0, y = 0,
      xend = CAP1,
-     yend = CAP2), data = Top50[1:30,], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
-  geom_label_repel(aes(x= CAP1  ,
+     yend = CAP2), data = Top50[1:15,], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
+  geom_label_repel(size = 2, aes(x= CAP1  ,
                       y= CAP2 ,  label = species),
-                   data = Top50[1:30,], fill = "orange", alpha = 0.75, max.overlaps = 13) + 
+                   data = Top50[1:15,], fill = "orange", alpha = 0.75, max.overlaps = 18) + 
   scale_color_viridis_d(option = "viridis", begin = .1, end = 1) + 
   theme_bw() 
 
-ggsave(file = here("Figures", "CAP_Site.png"), width = 9, height = 7)
+ggsave(file = here("Figures", "CAP_Site.png"), width = 8, height = 7)
 
 ###====Fig 2: Month differences, sp vectors(capscale)======
 
