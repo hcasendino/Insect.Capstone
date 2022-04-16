@@ -1,17 +1,5 @@
-###=== Examining Padden ======
-# Looking at differences in insect communities across month and reach for Padden Specifically (using updated eDNA index)
-# Written by Helen Casendino (hcas1024@uw.edu)
-# Created: 13 Feb 2022  Modified: 13 Feb 2022
 
-# Dependencies 
-library(tidyverse)
-library(here)
-library(vegan)
-library(wesanderson)
-
-asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
-asv_reads_annotated <- asv_reads_annotated %>% filter(mmyy != "521" & mmyy != "621" & mmyy != "721") # FOR NOW, we'll remove may june and july because messed up sequencing runs
-
+# old code from Padden analysis (what species_Summary used to be)
 
 ########===== (1) CAP on reach*month & PERMANOVA, plot of top 15 sp driving month diffs==== 
 
@@ -46,32 +34,9 @@ covariates_only <- complete_asv_covariate_tab %>% select(Site, mmyy, Reach)
 covariates_only[which(covariates_only$Reach == "Up11" | covariates_only$Reach == "Up5"), "Reach"] <- "Up"
 covariates_only$mmyy <- as.factor(covariates_only$mmyy )
 
-# b) Month*reach CAP
-
-cap1 <- capscale(hashes_only~ Reach + mmyy*Reach ,data=covariates_only, distance="bray")
-sppscores(cap1) <- hashes_only
-
-adonis(hashes_only~ Reach + mmyy*Reach,data=covariates_only, method="bray") 
-
-
-
-cap2 <- cap1[["CCA"]][["wa"]] %>%
-  as.data.frame() %>%
-  bind_cols(covariates_only) %>%
-  ggplot(aes(x = CAP1,
-             y = CAP2)) +
-  geom_point(size = 1.5) +
-  geom_point(aes(color = mmyy, shape = Reach), size = 3) +
-  scale_color_manual(values=wes_palette(n=3, name="FantasticFox1")) + 
-  theme_bw() + 
-  geom_text(x = -0.2, y = 0.35, label="Padden: Reach + mmyy*Reach", size = 4)
-
-ggsave(file = here("Figures", "Padden_CAPplot_month_reach.png"), width = 5, height = 4)
-
 
 cap1 <- capscale(hashes_only~ mmyy ,data=covariates_only, distance="bray")
 sppscores(cap1) <- hashes_only
-
 ASVvectors <- cap1[["CCA"]][["v"]] %>% as.data.frame 
 CAPorder <- ASVvectors %>% arrange(desc(CAP1)) 
 CAPorder <- cbind(Hash = rownames(CAPorder), CAPorder)
@@ -94,21 +59,21 @@ plotdata$Hash <- factor(plotdata$Hash,
                                    "Lepidostoma unicolor", 
                                    "Aquarius remigis",
                                    "Lepidostoma",
-                                  " Pteronarcys princeps",
-                                  "Eucallipterus tiliae",
-                                  "Campaea",
-                                  "Neophylax",
-                                  "Chironomidae",
-                                 "Psychoglypha alascensis",
-                                 "Ceratopsyche",
-                                 "Rhyacophila vedra",
-                                 "Parapsyche almota"))
-                                  
+                                   " Pteronarcys princeps",
+                                   "Eucallipterus tiliae",
+                                   "Campaea",
+                                   "Neophylax",
+                                   "Chironomidae",
+                                   "Psychoglypha alascensis",
+                                   "Ceratopsyche",
+                                   "Rhyacophila vedra",
+                                   "Parapsyche almota"))
+
 
 plotdata %>% ggplot(aes(x = mmyy, y = Hash)) +
   geom_point(aes(size = Normalized.reads, color = Hash))  +
   theme_bw() +  labs(title = "Padden", y = "Taxon", x = "Month", size = "eDNA Index") + 
-   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + 
   guides(colour = "none") 
 
 ggsave(file = here("Figures", "Padden_15DiffTaxa_Month.png"), width = 5, height = 7)
@@ -143,5 +108,8 @@ fishspdf %>% filter(p_a != "absence") %>%
 
 
 ggsave(file = here("Figures", "Padden_Fishes_Reach_Month.png"), width = 7 , height = 3)
+
+
+
 
 
