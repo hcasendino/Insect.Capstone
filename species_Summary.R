@@ -101,5 +101,4 @@ sp_plot_df_reduced %>%
   guides(size = "none") + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) 
 
-ggsave(file = here("Figures", "Species_Site_Month.png"), width = 9, height = 6.5)
-
+ggsave(file = here("Figures", "Species_Site_Month.png"), width = 9, height = 6.75)
