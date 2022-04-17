@@ -97,7 +97,7 @@ sp_plot_df_reduced %>%
   facet_wrap( ~ Site) + 
   theme_bw() +  
   labs(y = "", x = "Month", color = "Order") + 
-  scale_color_brewer(palette = "Greens")+
+  scale_color_brewer(palette = "RdYlGn")+
   guides(size = "none") + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) 
 
