@@ -254,8 +254,8 @@ p1 <- cap.coords %>%
   labs(title = 'Month: {(next_state)}') + 
   ease_aes('linear') 
 
-anim <- animate(p1, duration = 100, fps = 20, width = 400, height = 400, renderer = gifski_renderer(loop = F))
-anim_save('output.gif')
+anim <- animate(p1, duration = 50, fps = 15, width = 500, height = 500, renderer = gifski_renderer(loop = T))
+anim_save(file = here("Figures",'output.gif'))
 
 ###====For Ezza, up11 vs dn, up5 vs down=====
 
