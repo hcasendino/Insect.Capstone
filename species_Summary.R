@@ -36,6 +36,10 @@ summary_table <- d %>% mutate(IDd.hash.prop = n_IDd / n_unique_hash) %>% # so no
 summary_table <-  summary_table %>% filter(order != "") %>% 
             rename("Order" = "order", "Unique.Species" = "n_unique_sp", "Prop.Hash.toSpeciesID" = "IDd.hash.prop", 
                    "Mean.Read.Proportion" = "averaged.Order.Prop.Reads" )
+
+summary_table$Prop.Hash.toSpeciesID <- round(summary_table$Prop.Hash.toSpeciesID, 2)
+summary_table$Mean.Read.Proportion <- round(summary_table$Mean.Read.Proportion, 2)
+
 formattable::formattable(summary_table)
 
 # Based on this summary table, we could include the following in the sp heat map:
