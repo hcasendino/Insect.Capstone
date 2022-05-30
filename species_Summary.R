@@ -71,7 +71,29 @@ sp_plot_df[nrow(sp_plot_df), 3:ncol(sp_plot_df)] <- 0
 sp_plot_df <- sp_plot_df %>% pivot_longer(!c(Site, mmyy) ,names_to = "spord", values_to = "p.a")  %>% 
   separate(col = "spord" , into = c("order", "species"), sep = "[.]")
 
-# I wanted to see which sp have really low representation so I can cut some 
+sp_plot_df$Site <- factor(sp_plot_df$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"  ))
+sp_plot_df$mmyy <- factor(sp_plot_df$mmyy, labels = c("March", "April", "May", "June", "July", "August"))
+sp_plot_df <- sp_plot_df%>% filter(order != "Blattodea" & order!= "Odonata")
+
+sp_plot_df %>% 
+  mutate(species = fct_reorder(species, desc(order))) %>%
+  ggplot(aes(x = mmyy, y = species)) +
+  geom_point(shape=20, aes(size = ifelse(p.a==0, NA, p.a), color = order))  +
+  facet_wrap( ~ Site, ncol = 5) + 
+  theme_bw() +  
+  labs(y = "", x = "", color = "Order") + 
+  scale_color_brewer(palette = "Dark2")+
+  guides(size = "none", color = guide_legend(override.aes = list(size = 9))) + 
+  theme(axis.text.y = element_text(size = 4, face="italic"),
+        axis.text.x = element_text(size = 8, angle = 45, hjust=1),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+ggsave(file = here("Figures", "Species_Site_Month.png"), width = 7, height = 6.5)
+
+
+####=== multi sp plot FROM WHEN I WANTED TO ONLY USE A SUBSET (old) ####
+
 sp.avg.missed.mo <- sp_plot_df %>% group_by(Site, species, p.a) %>% summarize(n = n()) %>% 
   filter(p.a == "0") %>% # for each site, see for each sp how many months theyre absent from
   group_by(species) %>% 
@@ -79,30 +101,38 @@ sp.avg.missed.mo <- sp_plot_df %>% group_by(Site, species, p.a) %>% summarize(n 
 
 hist(sp.avg.missed.mo$avg.missed.mo)
 quantile(sp.avg.missed.mo$avg.missed.mo) # 5.3 is 25% quantile...lets cut it of at 5.3? 
-sp_to_incl<- sp.avg.missed.mo %>% filter(avg.missed.mo <= 5.3) %>%
-                 select(species) %>% 
-            add_row(species = "Baetis bicaudatus") %>% # add ephemeroptera sp as well, and a few others that show up on vectors
-             add_row(species = "Chironomus whitseli") %>%
-             add_row(species = "Abagrotis baueri") %>%
-              add_row(species = "Aquarius remigis") 
-  
-sp_plot_df_reduced <- sp_plot_df %>% filter(species %in% sp_to_incl$species) # new plot df
+
+# lets see what lepidopterans we should def include
+lep_vec <- sp_plot_df %>% filter(order == "Lepidoptera") %>% group_by(species) %>% summarize(n = n()) %>% slice(3:14)
+lep_vec <- c(lep_vec$species)
+
+# back to making species list to put on plot
+sp_to_incl <- sp.avg.missed.mo[sp.avg.missed.mo$avg.missed.mo <= 5.3,1]
+sp_to_incl <- sp_to_incl$species
+sp_to_incl <- c(sp_to_incl, "Baetis bicaudatus", "Chironomus whitseli", # add ephemeroptera and lepidoptera sp as well, and a few others that show up on vectors
+                "Abagrotis baueri","Aquarius remigis",lep_vec)
+
+sp_plot_df_reduced <- sp_plot_df %>% filter(species %in% sp_to_incl) # new plot df
 
 # for plot display change mmyy and site labels
 sp_plot_df_reduced$Site <- factor(sp_plot_df_reduced$Site, labels = c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"  ))
 sp_plot_df_reduced$mmyy <- factor(sp_plot_df_reduced$mmyy, labels = c("March", "April", "May", "June", "July", "August"))
 
-
 # plot 
 sp_plot_df_reduced %>% 
   mutate(species = fct_reorder(species, desc(order))) %>%
   ggplot(aes(x = mmyy, y = species)) +
-  geom_point(shape=15, aes(size = ifelse(p.a==0, NA, p.a), color = order))  +
+  geom_point(shape=20, aes(size = ifelse(p.a==0, NA, p.a), color = order))  +
   facet_wrap( ~ Site) + 
   theme_bw() +  
-  labs(y = "", x = "Month", color = "Order") + 
-  scale_color_brewer(palette = "RdYlGn")+
-  guides(size = "none") + 
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) 
+  labs(y = "", x = "", color = "Order") + 
+  scale_color_brewer(palette = "Dark2")+
+  guides(size = "none", color = guide_legend(override.aes = list(size = 9))) + 
+  theme(axis.text.y = element_text(size = 4, face="italic"),
+        axis.text.x = element_text(size = 8, angle = 45, hjust=1),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
 
-ggsave(file = here("Figures", "Species_Site_Month.png"), width = 9, height = 6.75)
+ggsave(file = here("Figures", "Species_Site_Month_REDUCED.png"), width = 5.7, height = 6.5)
+
+
