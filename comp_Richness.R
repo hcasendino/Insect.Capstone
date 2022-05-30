@@ -1,6 +1,6 @@
 ###=== Characterizing Creek Communities among Bellingham Creeks - Richness======
 # Written by Helen Casendino (hcas1024@uw.edu) & Ezza 
-# Created: 28 Jan 2022   Modified: 13 Apr 2022
+# Created: 28 Jan 2022   Modified: 29 May 2022
 
 
 # Dependencies
@@ -54,7 +54,7 @@ reachplot <- ggplot(insect_richness, aes(x=Reach, y=sp_richness)) +
   scale_x_discrete( labels= c("Downstream", "Upstream"))
 
 ggarrange(siteplot, reachplot, ncol=2)
-ggsave(file = here("Figures", "total_insect_rich_species_multipanel.png"), width = 8, height = 4)
+#ggsave(file = here("Figures", "total_insect_rich_species_multipanel.png"), width = 8, height = 4)
 
 ###====Fig. 0a, 0b: Gross Insecta Richness (genus) across Creeks, and by reach======
 
@@ -76,8 +76,8 @@ reachplot <- ggplot(insect_richness, aes(x=Reach, y=genus_richness)) +
   theme(legend.position="none") + 
   scale_x_discrete( labels= c("Downstream", "Upstream"))
 
-ggarrange(siteplot, reachplot, ncol=2)
-ggsave(file = here("Figures", "total_insect_rich_genus_multipanel.png"), width = 8, height = 4)
+#ggarrange(siteplot, reachplot, ncol=2)
+#ggsave(file = here("Figures", "total_insect_rich_genus_multipanel.png"), width = 8, height = 4)
 
 ###====Fig. 2: Relative Insecta Richness up/downstream (sp), by month and creek ======
 
@@ -107,7 +107,7 @@ diffsplot <- ggplot(toplot, aes(x= Site, y=richness_diffs)) +
   labs(title = "Reach Differences in Insecta Richness", y = "Relative Species Richness (Up - Down)", x = "") + 
   scale_x_discrete(labels= rep("", 5))
 
-ggsave(diffsplot, file = here("Figures", "relative_insect_rich_sp_month_site.png"), width = 7, height = 4)
+#ggsave(diffsplot, file = here("Figures", "relative_insect_rich_sp_month_site.png"), width = 7, height = 4)
 
 ###====Fig. 3: Insecta Richness (genus) for 3 IBI orders across Creeks & months======
 
@@ -135,7 +135,7 @@ ibiplot <- ibi_insect_richness %>%
         theme_minimal() +  theme( strip.background =element_rect(fill="white")) + 
         labs(title = "IBI Genus Richness by Month and Site", y = "Insecta Genus Richness", x = "") 
 
-ggsave(file = here("Figures", "IBI_insect_rich_genus.png"), width = 8, height = 7)
+#ggsave(file = here("Figures", "IBI_insect_rich_genus.png"), width = 8, height = 7)
 
 ###====Fig. 4: Relative Insecta Richness up/downstream (genus) for 3 IBI orders across Creeks & months======
 
@@ -162,7 +162,7 @@ diffsplot2 <- ggplot(ibi_insect_richness, aes(x= Site, y=new_richness_diffs)) +
   theme_minimal() +  theme( strip.background =element_rect(fill="white")) + 
   labs(title = "Reach Differences in IBI Richness", x = "Site", y = "Relative Genus Richness (Up - Down)", x = "")
 
-ggsave(diffsplot2, file = here("Figures", "relative_ibi_rich_genus_month_site.png"), width = 10, height = 6)
+# ggsave(diffsplot2, file = here("Figures", "relative_ibi_rich_genus_month_site.png"), width = 10, height = 6)
 
 diffsplot1<- ggplot(ibi_insect_richness, aes(x= Site, y=new_richness_diffs)) + 
   geom_bar(aes(fill = Site), stat="identity") + 
@@ -170,7 +170,7 @@ diffsplot1<- ggplot(ibi_insect_richness, aes(x= Site, y=new_richness_diffs)) +
   scale_fill_viridis_d(option = "viridis", begin = 0.4, end = 1)  +
   theme_minimal() +  theme( strip.background =element_rect(fill="white")) + 
   labs(title = "Reach Differences in IBI Richness", x = "Site", y = "Relative Genus Richness (Up - Down)", x = "")
-ggsave(diffsplot1, file = here("Figures", "relative_insect_rich_sp_month_site.png"), width = 10, height = 6)
+#ggsave(diffsplot1, file = here("Figures", "relative_insect_rich_sp_month_site.png"), width = 10, height = 6)
 
 
 
@@ -185,3 +185,53 @@ step1 <- asv_reads_annotated %>%
 
 step1 %>% group_by(classified_as) %>% 
   summarise(n = n()) %>% mutate(prop_classified = n/ nrow(step1))
+
+###====Fig. 5: Total Insecta Richness among IBI groups by Site (5/29/22)=====
+
+ibi_insect_richness <-  asv_reads_annotated %>% filter(class == "Insecta") %>%
+  filter(species != "") 
+
+richness_summary_pt1 <-  ibi_insect_richness %>% filter(order =="Plecoptera" |order =="Trichoptera") %>% 
+  group_by(Sample, Reach, Biological.replicate) %>% 
+  mutate(ibi_richness = length(unique(species))) %>%  # unique spp per IBI order
+  ungroup() %>% 
+  select(mmyy, Site, Reach, Biological.replicate, order, ibi_richness) %>% 
+  rename("taxon" ="order") %>% 
+  mutate("group" = "Trichoptera + Plecoptera")
+
+richness_summary_pt2 <-  ibi_insect_richness %>% filter(family == "Chironomidae" |order =="Ephemeroptera") %>% 
+  group_by(Sample, Reach, Biological.replicate) %>% 
+  mutate(ibi_richness = length(unique(species))) %>%  # unique spp per IBI order
+  ungroup() %>% 
+  select(mmyy, Site, Reach, Biological.replicate, family, ibi_richness) %>% 
+  rename("taxon" ="family") %>% 
+  mutate("group" = "Chironomidae + Baetidae")
+
+richness_summary <- rbind(richness_summary_pt1, richness_summary_pt2)
+  
+# plot
+richplot<- ggplot(richness_summary, aes(x=Site, y=ibi_richness)) + 
+  geom_violin(aes(fill=Site)) + 
+  facet_wrap(~group)+ 
+  scale_fill_brewer(palette = "Blues", name = "group")  +
+  theme_bw() +
+  theme(strip.background =element_rect(fill="white")) + 
+  labs(y = "Species Richness", x = "") + 
+  theme(legend.position="none") + 
+  scale_x_discrete( labels= c("Portage", "Barnes", "Chuckanut", "Padden", "Squalicum"))+
+  stat_summary(fun = "mean",
+               geom = "crossbar", 
+               width = 0.3,
+               colour = "gray6")+ 
+  scale_y_continuous(breaks=c(1,2,3,4,5,6,7))
+
+ggsave(richplot, file = here("Figures", "insect_rich_sp_IBIgroups.png"), width = 6, height = 4)
+
+
+
+
+
+
+
+
+
