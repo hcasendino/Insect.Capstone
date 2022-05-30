@@ -1,6 +1,6 @@
 ###=== Comparing Creek Communities among Bellingham Creeks======
 # this one reverts to using asvs for dissim matrices, not just ID'd sp
-# Created: 28 Jan 2022   Modified: 13 Apr 2022 
+# Created: 28 Jan 2022   Modified: 15 May 2022 
 
 # Dependencies 
 library(tidyverse)
@@ -11,6 +11,7 @@ library(ggrepel)
 library(gganimate)
 library(gifski)
 library(av)
+library(wesanderson)
 
 asv_reads_annotated <- read.csv(here("Input","COI_reads_taxonomy.csv"))
 
@@ -32,7 +33,7 @@ for(i in 1:ncol(hashes)){
   hashes[,i]<-ifelse(hashes[,i] != 0,1,0)
 }
 
-###==== Fig 1 & 2: Site differences (across and by month), sp vectors (capscale)======
+###==== Fig 1 : Site differences (across), sp vectors (capscale)======
 
 cap1 <- capscale(hashes~ Site,data=covariates, distance= "jaccard")
 sppscores(cap1) <- hashes
@@ -69,7 +70,7 @@ cap2 <- cap1[["CCA"]][["wa"]] %>%
 ggsave(file = here("Figures", "CAP_Site.png"), width = 7, height = 5)
 
 
-#### FIG 2 = SITE DIFFS ACCOUNTING FOR MONTH 
+###==== Fig 2: site diffs, facet by month ####
 wrangle_by_month <- function(month1, month2){
   return(asv_reads_annotated %>% filter(class == "Insecta" & (mmyy == month1 | mmyy == month2)) %>%
            select(mmyy, Site, Reach, Biological.replicate, nReads, Hash) %>% 
@@ -102,15 +103,16 @@ get_CAP_plot <- function(covariates_hashes){
     bind_cols(covariates) %>% 
     ggplot(aes(x = CAP1,
                y = CAP2)) +
-    geom_point(size = 1.5) +
+    geom_point(size = 2) +
     geom_point(aes(color = Site), size = 2.5) +
     geom_segment(aes(x = 0, y = 0,
                      xend = CAP1,
-                     yend = CAP2), data = Top50[1:20,], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
+                     yend = CAP2), data = Top50[Top50$species != "",], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
     geom_label_repel(size = 2, aes(x= CAP1  ,
                                    y= CAP2 ,  label = species),
-                     data = Top50[1:20,], fill = "orange", alpha = 0.75, max.overlaps = 18) + 
-    scale_color_viridis_d(option = "viridis", begin = .1, end = 1) + 
+                     data = Top50[Top50$species != "",], fill = "gray92", alpha = 0.75, max.overlaps = 8) + 
+    guides(color = guide_legend(override.aes = list(size = 7))) + 
+    scale_color_manual(values = wes_palette("Darjeeling2", n = 5)) + 
     theme_bw() + 
     coord_cartesian(ylim = c(-0.5,0.5), xlim= c(-0.4,0.45))
   
@@ -126,13 +128,15 @@ cap2 <- get_CAP_plot(covariates_hashes)
 covariates_hashes <- wrangle_by_month("0721","0821")
 cap3 <- get_CAP_plot(covariates_hashes)
 
-fullplot <- ggarrange(cap1 + ggtitle("March-April"), 
-                      cap2 + theme(axis.title.y = element_blank())  +  ggtitle("May-June"), 
-                      cap3 + theme(axis.title.y = element_blank()) + ggtitle("July-August"),
-                      common.legend = TRUE, 
-                      legend = "right", ncol =3)
+legend <- get_legend(cap3)
 
-ggsave(file = here("Figures", "CAP_Site_monthfacet.png"), width = 12, height = 5)
+fullplot <- ggarrange(cap1 + theme(axis.title.x = element_blank(), legend.position="none") + ggtitle("March-April"), 
+                      cap2 + theme(axis.title.y = element_blank(),legend.position="none")  +  ggtitle("May-June"), 
+                      cap3 + theme(legend.position="none") + ggtitle("July-August"),
+                      legend,
+                      common.legend = F,  ncol =2, nrow = 2)
+
+ggsave(file = here("Figures", "CAP_Site_monthfacet.png"), width = 8, height = 8)
 
 ###====Fig 3: Month diffs only, sp vectors =====
 
@@ -164,12 +168,12 @@ cap2<- cap1[["CCA"]][["wa"]] %>% # plotting
   as.data.frame() %>%
   bind_cols(covariates) %>% 
   ggplot(aes(x = CAP1,
-             y = CAP2)) +  geom_point(size = 1.5) +  geom_point(aes(color = mmyy), size = 3) +
+             y = CAP2)) +  geom_point(size = 4) +  geom_point(aes(color = mmyy), size = 4) +
   geom_segment(aes(x = 0, y = 0,
                    xend = CAP1,
-                   yend = CAP2), data = Top50[1:15,], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
-  geom_label_repel(size = 2, aes(x= CAP1  ,  y= CAP2 ,  label = species), data = Top50[1:15,], fill = "orange", alpha = 0.75, max.overlaps = 23) + 
-  scale_color_viridis_d(option = "plasma", begin = .1, end = 0.9) + 
+                   yend = CAP2), data = Top50[Top50$species != "",], color = "black", arrow = arrow(length = unit(0.1,"cm"))) +
+  geom_label_repel(size = 2.5, aes(x= CAP1  ,  y= CAP2 ,  label = species), data = Top50[Top50$species != "",], fill = "gray92", alpha = 0.75, max.overlaps = 15) + 
+  scale_color_brewer(palette = "BrBG") + 
   labs(color = "Month") +  theme_bw()  +
   theme(legend.title = element_text(size = 15), legend.text = element_text(size =10)) 
 
