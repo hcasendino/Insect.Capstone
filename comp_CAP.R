@@ -179,6 +179,7 @@ cap2<- cap1[["CCA"]][["wa"]] %>% # plotting
 
 ggsave(file = here("Figures", "CAP_Month.png"), width = 7, height = 5)
 
+
 ##====Fig 4: Animated Site CAP =====
 
 wrangle_by_month <- function(month1){
